@@ -28,17 +28,21 @@ dependencies {
     //log4j
     implementation 'org.apache.logging.log4j:log4j-api:2.11.2'
     implementation 'org.apache.logging.log4j:log4j-core:2.11.2'
+    //web
     implementation 'io.undertow:undertow-core:2.0.1.Final'
     implementation 'io.undertow:undertow-servlet:2.0.1.Final'
     implementation 'io.undertow:undertow-websockets-jsr:2.0.1.Final'
 //    implementation 'commons-fileupload:commons-fileupload:1.4'
     implementation 'com.google.zxing:core:3.3.0'
     //万能支付  公共lib,支付核心与规范定义
-    implementation 'com.egzosn:pay-java-common:2.12.7'
+    implementation 'com.egzosn:pay-java-common:2.13.1'
     //万能支付  支付宝模块
-    implementation 'com.egzosn:pay-java-ali:2.12.7'
-    //万能支付 微信模块
-    implementation 'com.egzosn:pay-java-wx:2.12.7'
+    implementation 'com.egzosn:pay-java-ali:2.13.1'
+    //万能支付 微信模块 old-2.12.7'
+    implementation 'com.egzosn:pay-java-wx:2.13.1'
+//    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+//    implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
+    implementation group: 'commons-httpclient', name: 'commons-httpclient', version: '3.1'
 }
 
 compileKotlin {

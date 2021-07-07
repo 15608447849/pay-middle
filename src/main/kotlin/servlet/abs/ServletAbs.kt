@@ -13,10 +13,6 @@ import javax.servlet.http.HttpServletResponse
  */
 open class ServletAbs : javax.servlet.http.HttpServlet() {
 
-    private val headers
-            = arrayOf("")
-        .joinToString ()
-
      //跨域
     protected fun filter(req: HttpServletRequest, resp: HttpServletResponse) {
  //        http://www.ruanyifeng.com/blog/2016/04/cors.html
@@ -33,7 +29,6 @@ open class ServletAbs : javax.servlet.http.HttpServlet() {
         resp.addHeader("Access-Control-Allow-Origin", "*")
         resp.addHeader("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, DELETE, TRACE, OPTIONS")
         resp.addHeader("Access-Control-Allow-Headers", "x-requested-with") // 允许x-requested-with请求头
-        resp.addHeader("Access-Control-Allow-Headers", headers )
 }
 
     @Throws(ServletException::class, IOException::class)
@@ -56,11 +51,8 @@ open class ServletAbs : javax.servlet.http.HttpServlet() {
     //获取文本
     protected fun getText(parameter: String?, def: String = ""): String {
         if (parameter == null) return def
-        return URLDecoder.decode(parameter,"UTF-8");
+        return URLDecoder.decode(parameter,"UTF-8")
     }
-
-
-
 
 }
 

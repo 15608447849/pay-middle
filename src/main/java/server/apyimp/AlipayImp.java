@@ -5,6 +5,7 @@ package server.apyimp;
 import com.egzosn.pay.ali.api.AliPayConfigStorage;
 import com.egzosn.pay.ali.api.AliPayService;
 import com.egzosn.pay.ali.bean.AliTransactionType;
+import com.egzosn.pay.common.api.DefaultPayMessageHandler;
 import com.egzosn.pay.common.api.PayMessageHandler;
 import com.egzosn.pay.common.api.PayService;
 import com.egzosn.pay.common.bean.PayMessage;
@@ -33,8 +34,9 @@ import java.util.Map;
  * @Author: leeping
  * @Date: 2019/4/17 14:26
  */
-@PropertiesFilePath("alipay_swzy.properties")
-public class AlipayImp implements PayMessageHandler {
+//@PropertiesFilePath("alipay_swzy.properties")
+@PropertiesFilePath("alipay_onek.properties")
+public class AlipayImp extends DefaultPayMessageHandler {
 
     @PropertiesName("alipay.appid")
     private static String appid;
@@ -57,12 +59,12 @@ public class AlipayImp implements PayMessageHandler {
         aliPayConfigStorage.setKeyPrivate(privKey);
         aliPayConfigStorage.setSignType("RSA2");
         aliPayConfigStorage.setInputCharset("utf-8");
-        aliPayConfigStorage.setNotifyUrl("http://"+Launch.domain+"/result/alipay");
-        //是否为测试账号，沙箱环境
+        aliPayConfigStorage.setNotifyUrl(Launch.domain+"/result/alipay");
+//        //是否为测试账号，沙箱环境
 //        aliPayConfigStorage.setTest(true);
         service = new AliPayService(aliPayConfigStorage);
         service.setPayMessageHandler(new AlipayImp());
-        System.out.println(appid +" , " + seller +" , "+ privKey);
+        Launch.log.info("alipay 信息\n "+ appid +" \n " + seller +" \n "+ alipayPubKey +" \n " + privKey);
     }
 
     //获取扫码付的二维码

@@ -1,6 +1,5 @@
 package servlet.imp
 
-import com.egzosn.pay.ali.bean.AliTransactionType
 import com.egzosn.pay.common.bean.PayOrder
 import server.Launch
 import server.threads.QrImageDeleteThread
@@ -14,7 +13,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
-import java.util.Calendar
 
 
 
@@ -68,7 +66,7 @@ open class PayHandler : ServletAbs() {
                 result.set(1,appPayMap)
             }else{
                 QrImageDeleteThread.addQrImage(qrImage)
-                val qrCodeLinke = "http://${Launch.domain}${qrImage.link}" //返回前端二维码信息
+                val qrCodeLinke = "${Launch.domain}${qrImage.link}" //返回前端二维码信息
                 result.set(1,qrCodeLinke)
             }
         } catch (e: Exception) {

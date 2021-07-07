@@ -1,5 +1,6 @@
 package server.apyimp;
 
+import com.egzosn.pay.common.api.DefaultPayMessageHandler;
 import com.egzosn.pay.common.api.PayMessageHandler;
 import com.egzosn.pay.common.api.PayService;
 import com.egzosn.pay.common.bean.*;
@@ -8,6 +9,7 @@ import com.egzosn.pay.common.http.HttpConfigStorage;
 import com.egzosn.pay.wx.api.WxPayConfigStorage;
 import com.egzosn.pay.wx.api.WxPayService;
 import com.egzosn.pay.wx.bean.WxTransactionType;
+import com.google.gson.Gson;
 import org.jetbrains.annotations.NotNull;
 import properties.abs.ApplicationPropertiesBase;
 import properties.annotations.PropertiesFilePath;
@@ -27,6 +29,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.Map;
 
 import static properties.abs.ApplicationPropertiesBase.readPathProperties;
@@ -35,8 +38,9 @@ import static properties.abs.ApplicationPropertiesBase.readPathProperties;
  * @Author: leeping
  * @Date: 2019/5/21 13:54
  */
-@PropertiesFilePath("wxpay_swzy.properties")
-public class WxpayImp  implements PayMessageHandler {
+//@PropertiesFilePath("wxpay_swzy.properties")
+@PropertiesFilePath("wxpay_onek.properties")
+public class WxpayImp  extends DefaultPayMessageHandler {
 
     @PropertiesName("wxpay.mchid")
     private static String mchid;//合作者id（商户号）
@@ -51,8 +55,11 @@ public class WxpayImp  implements PayMessageHandler {
     @PropertiesName("wxpay.app.secret.key")
     private static String secretKey_app;//密钥
 
+    private static  WxPayConfigStorage wxPayConfigStorage_native;
+    private static WxPayConfigStorage wxPayConfigStorage_app;
     private static PayService service_native;
     private static PayService service_app;
+
 
     static{
        initInstance();
@@ -60,41 +67,56 @@ public class WxpayImp  implements PayMessageHandler {
 
     private static void initInstance() {
         ApplicationPropertiesBase.initStaticFields(WxpayImp.class);
+        try {
+            WxpayImp handler = new WxpayImp();
+            HttpConfigStorage httpConfigStorage = genSSLCert();
+
+            //二维码支付服务
+            wxPayConfigStorage_native = new WxPayConfigStorage();
+            wxPayConfigStorage_native.setAppid(appid_native);
+            wxPayConfigStorage_native.setSecretKey(secretKey_native);
+            wxPayConfigStorage_native.setMchId(mchid);
+            wxPayConfigStorage_native.setNotifyUrl(Launch.domain+"/result/wxpay");
+            wxPayConfigStorage_native.setSignType("MD5");
+            wxPayConfigStorage_native.setInputCharset("utf-8");
+
+            service_native =  new WxPayService(wxPayConfigStorage_native,httpConfigStorage);
+            service_native.setPayMessageHandler(handler);
+            //app支付服务
+            wxPayConfigStorage_app = new WxPayConfigStorage();
+            wxPayConfigStorage_app.setAppid(appid_app);
+            wxPayConfigStorage_app.setSecretKey(secretKey_app);
+            wxPayConfigStorage_app.setMchId(mchid);
+            wxPayConfigStorage_app.setNotifyUrl(Launch.domain+"/result/wxpay");
+            wxPayConfigStorage_app.setSignType("MD5");
+            wxPayConfigStorage_app.setInputCharset("utf-8");
+
+            service_app =  new WxPayService(wxPayConfigStorage_app,httpConfigStorage);
+            service_app.setPayMessageHandler(handler);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static HttpConfigStorage genSSLCert() {
         //ssl 设置
         HttpConfigStorage httpConfigStorage =new HttpConfigStorage();
         //设置ssl证书对应的存储方式
         httpConfigStorage.setCertStoreType(CertStoreType.INPUT_STREAM);
-        try {
-            String ssl_cert = "/wx_"+mchid+"_cert.p12";
-            //ssl 退款证书相关
+
+        String ssl_cert = "/wx_"+mchid+"_cert.p12";
+        //ssl 退款证书相关
+        try{
             InputStream in = readPathProperties(WxpayImp.class, ssl_cert);
             httpConfigStorage.setKeystore(in);
             httpConfigStorage.setStorePassword(mchid);
-        } catch (FileNotFoundException e) {
+            httpConfigStorage.setCharset("UTF-8");
+            Launch.log.info("加载微信SSL证书: "+ ssl_cert);
+            return httpConfigStorage;
+        }catch (Exception e){
             e.printStackTrace();
         }
-
-        //二维码支付服务
-        WxPayConfigStorage wxPayConfigStorage = new WxPayConfigStorage();
-        wxPayConfigStorage.setAppid(appid_native);
-        wxPayConfigStorage.setSecretKey(secretKey_native);
-        wxPayConfigStorage.setMchId(mchid);
-        wxPayConfigStorage.setNotifyUrl("http://"+ Launch.domain+"/result/wxpay");
-        wxPayConfigStorage.setSignType("MD5");
-        wxPayConfigStorage.setInputCharset("utf-8");
-        service_native =  new WxPayService(wxPayConfigStorage,httpConfigStorage);
-        service_native.setPayMessageHandler(new WxpayImp());
-
-        //app支付服务
-        WxPayConfigStorage wxPayConfigStorage_app = new WxPayConfigStorage();
-        wxPayConfigStorage_app.setAppid(appid_app);
-        wxPayConfigStorage_app.setSecretKey(secretKey_app);
-        wxPayConfigStorage_app.setMchId(mchid);
-        wxPayConfigStorage_app.setNotifyUrl("http://"+ Launch.domain+"/result/wxpay");
-        wxPayConfigStorage_app.setSignType("MD5");
-        wxPayConfigStorage_app.setInputCharset("utf-8");
-        service_app =  new WxPayService(wxPayConfigStorage_app,httpConfigStorage);
-        service_app.setPayMessageHandler(new WxpayImp());
+        throw new RuntimeException("加载SSL证书失败");
     }
 
     //获取扫码付的二维码
@@ -132,15 +154,47 @@ public class WxpayImp  implements PayMessageHandler {
     //退款
     public static Map<String, Object> refund(@NotNull RefundOrder rorder,boolean isApp) {
         try {
-            if (isApp)  return service_app.refund(rorder);
-            return service_native.refund(rorder);
-        } catch (Exception e) {
-            if (e instanceof  PayErrorException){
-                PayErrorException error = (PayErrorException) e;
-                if (error.getPayError().getErrorMsg().equals("api.mch.weixin.qq.com:443 failed to respond")){
-                    initInstance();
-                }
+            // 退款特殊处理
+            WxpayImp handler = new WxpayImp();
+            HttpConfigStorage httpConfigStorage = genSSLCert();
+
+            //二维码支付服务
+            WxPayConfigStorage wxPayConfigStorage_native = new WxPayConfigStorage();
+            wxPayConfigStorage_native.setAppid(appid_native);
+            wxPayConfigStorage_native.setSecretKey(secretKey_native);
+            wxPayConfigStorage_native.setMchId(mchid);
+            wxPayConfigStorage_native.setNotifyUrl(Launch.domain+"/result/wxpay");
+            wxPayConfigStorage_native.setSignType("MD5");
+            wxPayConfigStorage_native.setInputCharset("utf-8");
+
+            WxPayService service_native =  new WxPayService(wxPayConfigStorage_native,httpConfigStorage);
+            service_native.setPayMessageHandler(handler);
+
+            //app支付服务
+            WxPayConfigStorage wxPayConfigStorage_app = new WxPayConfigStorage();
+            wxPayConfigStorage_app.setAppid(appid_app);
+            wxPayConfigStorage_app.setSecretKey(secretKey_app);
+            wxPayConfigStorage_app.setMchId(mchid);
+            wxPayConfigStorage_app.setNotifyUrl(Launch.domain+"/result/wxpay");
+            wxPayConfigStorage_app.setSignType("MD5");
+            wxPayConfigStorage_app.setInputCharset("utf-8");
+
+            WxPayService service_app =  new WxPayService(wxPayConfigStorage_app,httpConfigStorage);
+            service_app.setPayMessageHandler(handler);
+
+            PayService service = isApp? service_app : service_native;
+            Map<String,Object> map = service.refund(rorder);
+
+            Launch.log.info("微信退款结果: " + new Gson().toJson(map) );
+
+            try {
+                httpConfigStorage.getKeystoreInputStream().close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+            return map;
+        } catch (Exception e) {
+            Launch.log.error("微信退款失败",e);
             throw e;
         }
     }
@@ -196,12 +250,6 @@ public class WxpayImp  implements PayMessageHandler {
     }
 
 
-    public static void main(String[] args) {
-//        String buyer_pay_amount = "18432";
-//        BigDecimal temp  = new BigDecimal(buyer_pay_amount).divide(new BigDecimal(100));
-//        BigDecimal    temp  = new BigDecimal(vbuyer_pay_amount).divide(new BigDecimal(100),new MathContext(2, RoundingMode.HALF_DOWN));
-//       buyer_pay_amount = String.valueOf(temp.doubleValue());
-//        System.out.println(buyer_pay_amount);
-    }
+
 
 }

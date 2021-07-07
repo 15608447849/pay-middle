@@ -4,9 +4,13 @@ import com.egzosn.pay.common.bean.RefundOrder;
 import com.egzosn.pay.common.util.str.StringUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import properties.abs.ApplicationPropertiesBase;
+import properties.annotations.PropertiesFilePath;
+import properties.annotations.PropertiesName;
 import server.Launch;
 import server.apyimp.AlipayImp;
 import server.apyimp.WxpayImp;
+import server.threads.QrImageDeleteThread;
 import utils.IceClient;
 
 import java.math.BigDecimal;
@@ -18,7 +22,17 @@ import java.util.Map;
  * @Author: leeping
  * @Date: 2019/4/18 16:07
  */
+@PropertiesFilePath("/application.properties")
 public class IceTrade {
+
+    @PropertiesName("reg.tag")
+    public static String tag;
+    @PropertiesName("reg.address")
+    public static String address;
+
+    static {
+        ApplicationPropertiesBase.initStaticFields(IceTrade.class);
+    }
 
     //携带ice接口信息
     public String body = "";
@@ -63,7 +77,7 @@ public class IceTrade {
             if (arr.length < 6) throw new Exception("body = "+ body);
             body = body.substring(body.lastIndexOf("@")+1);
             Launch.log.info("body = "+ body);
-            client = new IceClient(arr[0],arr[1]);
+            client = new IceClient(tag,address);
             client.startCommunication(); //连接
             serverName = arr[2];
             className = arr[3];

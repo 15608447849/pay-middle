@@ -17,9 +17,12 @@ import properties.annotations.PropertiesName;
 import servlet.imp.*;
 
 import java.io.File;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.nio.file.Paths;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 import static io.undertow.servlet.Servlets.servlet;
 
@@ -32,14 +35,13 @@ import static io.undertow.servlet.Servlets.servlet;
 public class Launch {
     public static final Log log = LogFactory.getLog(Launch.class);
 
-    @PropertiesName("local.host")
-    private static String host;
 
-    @PropertiesName(("local.port"))
-    private static int port;
+    @PropertiesName("local.port")
+    public static int port;
 
     @PropertiesName(("local.domain"))
     public static String domain;
+
 
     static {
         ApplicationPropertiesBase.initStaticFields(Launch.class);
@@ -48,7 +50,6 @@ public class Launch {
     public static String dirPath;
 
     public static void main(String[] args) throws Exception{
-
 
         dirPath = new File(Launch.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParent() + "/store";
         File dir = new File(dirPath);
@@ -74,24 +75,58 @@ public class Launch {
         HttpHandler httpHandler = manager.start();
         //路径默认处理程序
         PathHandler pathHandler = Handlers.path(httpHandler);
+        List<String> ipList = getLocalIPList();
+        if (ipList.isEmpty()) throw new RuntimeException("没有可用的IP地址");
 
-        Undertow.builder()
-                .addHttpListener(port, host, pathHandler)
-                .build()
-                .start();
+        Undertow.Builder builder = Undertow.builder();
 
-        log.info("启动空间折叠,支付中间件, address = "+ host+":"+port+" ,文件存储:"+ dirPath);
+        for (String ip : ipList){
+            builder.addHttpListener(port,ip,pathHandler);
+        }
+
+       builder.build().start();
+
+        log.info("启动空间折叠,支付中间件, 域名 = "+ domain +" ,文件存储:"+ dirPath);
+    }
+
+    //获取本机所有IP地址
+    private static List<String> getLocalIPList() {
+        List<String> ipList = new ArrayList<>();
+        try {
+            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+            NetworkInterface networkInterface;
+            Enumeration<InetAddress> inetAddresses;
+            InetAddress inetAddress;
+            String ip;
+            while (networkInterfaces.hasMoreElements()) {
+                networkInterface = networkInterfaces.nextElement();
+                inetAddresses = networkInterface.getInetAddresses();
+                while (inetAddresses.hasMoreElements()) {
+                    inetAddress = inetAddresses.nextElement();
+                    if (inetAddress instanceof Inet4Address) { // IPV4
+                        ip = inetAddress.getHostAddress();
+                        ipList.add(ip);
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+        return ipList;
     }
 
     public static String printMap(Map map){
-        Iterator<Map.Entry> it = map.entrySet().iterator();
         StringBuilder sb = new StringBuilder("\n");
-        Map.Entry entry;
-        while (it.hasNext()){
-            entry = it.next();
-            sb.append("\t").append(entry.getKey()+" = "+ entry.getValue()+",");
+        if( map!= null ){
+            Iterator it = map.entrySet().iterator();
+            Map.Entry entry;
+            while (it.hasNext()){
+                entry = (Map.Entry) it.next();
+                sb.append("\t").append(entry.getKey()).append(" = ").append(entry.getValue()).append(",");
+            }
+            sb.deleteCharAt(sb.length()-1);
+            log.info(sb.deleteCharAt(sb.length()-1));
         }
-        log.info(sb.deleteCharAt(sb.length()-1));
-        return sb.deleteCharAt(sb.length()-1).toString();
+        return sb.toString();
     }
 }

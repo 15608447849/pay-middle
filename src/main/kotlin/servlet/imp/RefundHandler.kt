@@ -7,6 +7,7 @@ import server.apyimp.AlipayImp
 import server.apyimp.WxpayImp
 import server.beans.BackResult
 import servlet.abs.ServletAbs
+import java.lang.IllegalStateException
 import java.math.BigDecimal
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -17,6 +18,29 @@ import javax.servlet.http.HttpServletResponse
  * @Date: 2019/4/16 13:39
  */
 open class RefundHandler : ServletAbs() {
+
+    companion object{
+        @JvmField
+        val ingSet = HashSet<String>()
+
+        @JvmStatic
+        fun checkRefundIng(orderNo: String? ) : Boolean{
+            if (orderNo != null && orderNo.isNotEmpty()) {
+                return !ingSet.add(orderNo)
+            }
+            return false
+        }
+
+        @JvmStatic
+        fun removeRefundIngOrderNo(orderNo: String? ){
+            if(orderNo != null){
+                ingSet.remove(orderNo)
+            }
+        }
+
+    }
+
+
     override fun doPost(req: HttpServletRequest, resp: HttpServletResponse) {
         super.doPost(req, resp)
         val result = BackResult();
@@ -25,13 +49,22 @@ open class RefundHandler : ServletAbs() {
 
             if (contentType == "application/x-www-form-urlencoded") {
                 val type = getText(req.getParameter("type"))// 平台类型
-                val tradeNo = getText(req.getParameter("tradeNo")) //平台相关订单号
+                val tradeNo = getText(req.getParameter("tradeNo")) //支付平台相关订单号
+                val orderNo = getText(req.getParameter("orderNo")) //平台订单号
                 val refundNo = getText(req.getParameter("refundNo")) //退款单号
                 val price = getText(req.getParameter("price")) //退款金额
                 val priceTotal = getText(req.getParameter("priceTotal")) //退款总金额
                 val isApp = getText(req.getParameter("app"),"false").toBoolean() //是不是移动支付
 
-                println("退款: $type ,$tradeNo,$refundNo,$price,$priceTotal,$isApp")
+                println("退款: type=$type ,orderNo=$orderNo,tradeNo=$tradeNo,refundNo=$refundNo,price=$price,priceTotal=$priceTotal,app=$isApp")
+
+                if(tradeNo.isEmpty() || tradeNo.equals("0")) throw IllegalStateException("订单号( $orderNo ) 交易流水号不正确")
+
+                // 检查退款是否正在进行中
+
+                if(checkRefundIng(orderNo)){
+                    throw IllegalStateException("订单号( $orderNo ) 正在退款中")
+                }
 
                 val rorder = RefundOrder(refundNo, tradeNo,BigDecimal(price))
                     rorder.totalAmount = if (priceTotal.isNotEmpty()) BigDecimal(priceTotal) else BigDecimal(price)
@@ -46,7 +79,10 @@ open class RefundHandler : ServletAbs() {
                         val code = maps["code"]!!.toString().toInt()
                         if (code == 10000){
                             val fund_change = maps["fund_change"]
-                            if (fund_change == "Y") result.set(2,"退款成功",true)
+                            if (fund_change == "Y") {
+                                removeRefundIngOrderNo(orderNo)
+                                result.set(2,"退款成功",true)
+                            }
                             if (fund_change == "N") result.set(2,"已申请退款,请勿重复提交",true)
                         }else{
                             val sub_code = maps["sub_code"]
@@ -79,7 +115,8 @@ open class RefundHandler : ServletAbs() {
                             //业务结果
                             val result_code  = map["result_code"].toString()
                             if (result_code == "SUCCESS"){
-                                result.set(2,"退款成功",true);
+                                removeRefundIngOrderNo(orderNo)
+                                result.set(2,"退款成功",true)
                             }else if(result_code == "FAIL"){
                                 val err_code = map["err_code"].toString()
 
@@ -116,7 +153,7 @@ open class RefundHandler : ServletAbs() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            result.set(-2,e.message,false);
+            result.set(-2,e.message,false)
         }
 
         resp.writer.println(result)
