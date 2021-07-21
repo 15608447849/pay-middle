@@ -1,6 +1,9 @@
 package server;
 
 
+import ccbpay.servlets.CCBRequestHandle;
+import ccbpay.servlets.PayAbnormalReceive;
+import ccbpay.servlets.PayResultReceive;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -9,6 +12,7 @@ import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.FilterInfo;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import properties.abs.ApplicationPropertiesBase;
@@ -16,6 +20,7 @@ import properties.annotations.PropertiesFilePath;
 import properties.annotations.PropertiesName;
 import servlet.imp.*;
 
+import javax.servlet.DispatcherType;
 import java.io.File;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -33,15 +38,14 @@ import static io.undertow.servlet.Servlets.servlet;
  */
 @PropertiesFilePath("/application.properties")
 public class Launch {
-    public static final Log log = LogFactory.getLog(Launch.class);
 
+    public static final Log log = LogFactory.getLog(Launch.class);
 
     @PropertiesName("local.port")
     public static int port;
 
-    @PropertiesName(("local.domain"))
+    @PropertiesName("local.domain")
     public static String domain;
-
 
     static {
         ApplicationPropertiesBase.initStaticFields(Launch.class);
@@ -56,10 +60,13 @@ public class Launch {
         if (!dir.exists()){
             if (!dir.mkdirs()) throw new RuntimeException("无法创建文件夹:"+ dirPath);
         }
+
         DeploymentInfo servletBuilder = Servlets.deployment()
                 .setClassLoader(Launch.class.getClassLoader())
                 .setContextPath("/")
                 .setDeploymentName("pay-middle.war")
+                .addFilter(new FilterInfo("跨域过滤", AccessControlAllowOriginFilter.class))
+                .addFilterUrlMapping("跨域过滤","/*", DispatcherType.REQUEST)
                 .setResourceManager(
                         new PathResourceManager(Paths.get(dirPath), 16*4069L)
                 );
@@ -70,49 +77,23 @@ public class Launch {
         servletBuilder.addServlet(servlet("支付宝-结果处理-异步", AlipayResult.class).addMapping("/result/alipay"));
         servletBuilder.addServlet(servlet("微信-结果处理-异步", WxpayResult.class).addMapping("/result/wxpay"));
 
+        servletBuilder.addServlet(servlet("CCB-处理请求", CCBRequestHandle.class).addMapping("/ccb/request"));
+        servletBuilder.addServlet(servlet("CCB-支付结果接收", PayResultReceive.class).addMapping("/result/ccbpay"));
+        servletBuilder.addServlet(servlet("CCB-支付异常接收", PayAbnormalReceive.class).addMapping("/result/ccbpay/abnormal"));
+
         DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
         manager.deploy();
         HttpHandler httpHandler = manager.start();
         //路径默认处理程序
         PathHandler pathHandler = Handlers.path(httpHandler);
-        List<String> ipList = getLocalIPList();
-        if (ipList.isEmpty()) throw new RuntimeException("没有可用的IP地址");
 
         Undertow.Builder builder = Undertow.builder();
 
-        for (String ip : ipList){
-            builder.addHttpListener(port,ip,pathHandler);
-        }
+        builder.addHttpListener(port,"0.0.0.0",pathHandler);
 
        builder.build().start();
 
-        log.info("启动空间折叠,支付中间件, 域名 = "+ domain +" ,文件存储:"+ dirPath);
-    }
-
-    //获取本机所有IP地址
-    private static List<String> getLocalIPList() {
-        List<String> ipList = new ArrayList<>();
-        try {
-            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
-            NetworkInterface networkInterface;
-            Enumeration<InetAddress> inetAddresses;
-            InetAddress inetAddress;
-            String ip;
-            while (networkInterfaces.hasMoreElements()) {
-                networkInterface = networkInterfaces.nextElement();
-                inetAddresses = networkInterface.getInetAddresses();
-                while (inetAddresses.hasMoreElements()) {
-                    inetAddress = inetAddresses.nextElement();
-                    if (inetAddress instanceof Inet4Address) { // IPV4
-                        ip = inetAddress.getHostAddress();
-                        ipList.add(ip);
-                    }
-                }
-            }
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
-        return ipList;
+        log.info("空间折叠,支付中间件,端口 = " + port + " , 域名 = "+ domain +" , 文件存储 = "+ dirPath);
     }
 
     public static String printMap(Map map){
