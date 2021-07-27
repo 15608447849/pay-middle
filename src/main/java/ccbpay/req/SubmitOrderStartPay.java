@@ -50,7 +50,6 @@ import static ccbpay.CCBQueryFactory.CCB_REQUEST;
 
 public class SubmitOrderStartPay extends CCBQueryFactory.CCB_QUERY_STRUCT {
 
-
     private int GoPayType;
     private int OrderIniter = 1;
     private String BuyerUserID_ThirdSys;
@@ -84,8 +83,8 @@ public class SubmitOrderStartPay extends CCBQueryFactory.CCB_QUERY_STRUCT {
     private static final class OrderInfo{
         private String Order_No;
         private String Order_Money;
-        private String Order_Time;
-        private String Order_Tile;
+        private String Order_Time = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+        private String Order_Tile ;
         private String Order_BuyerPhone;
         private String ReceiverTrueName_ThirdSys;
         private String ReceiverCompany_ThirdSys ;
@@ -93,11 +92,11 @@ public class SubmitOrderStartPay extends CCBQueryFactory.CCB_QUERY_STRUCT {
         private int HaveProducts = 1;
         private List<Order_Product> Order_Products;
 
-        private OrderInfo(String order_No, String order_Money, String order_Time, String order_Tile, String order_BuyerPhone, String receiverTrueName_ThirdSys,
+        private OrderInfo(String order_No, String order_Money,String order_Tile, String order_BuyerPhone, String receiverTrueName_ThirdSys,
                          String receiverAddress_ThirdSys, List<Order_Product> order_Products) {
             Order_No = order_No;
             Order_Money = order_Money;
-            Order_Time = order_Time;
+
             Order_Tile = order_Tile;
             Order_BuyerPhone = order_BuyerPhone;
             ReceiverTrueName_ThirdSys = receiverTrueName_ThirdSys;
@@ -133,60 +132,17 @@ public class SubmitOrderStartPay extends CCBQueryFactory.CCB_QUERY_STRUCT {
     }
 
 
-
-    /*
-// 创建商品
-      List<SubmitOrderStartPay.OrderInfo.Order_Product> productList = new ArrayList<>();
-      productList.add(new SubmitOrderStartPay.OrderInfo.Order_Product("10010101999",
-              "医用防护口罩 朝美 F-Y3-A型*200只/件",
-              "0.01",
-              1));
-      // 创建订单
-      List<SubmitOrderStartPay.OrderInfo> orderList = new ArrayList<>();
-      orderList.add(new SubmitOrderStartPay.OrderInfo("2000000000001",
-              "0.01",
-                          "20210707051355",
-              "CCB支付测试订单",
-                          "13875055209",
-              "周明义",
-              "鼎城区灌溪镇兴发垸村",
-              productList
-              ));
-
-      // 创建请求
-      SubmitOrderStartPay req = new SubmitOrderStartPay("MALL10004",
-              goPayType,"900000000",
-              "900000000",
-              "周明义",
-              "13875055209",
-              "鼎城区灌溪镇兴发垸村",orderList);
-  * */
     public static String submitOrder(int goPayType, String companyID, String userName, String phone, String address,String orderID, String money){
         // 创建商品
         List<SubmitOrderStartPay.OrderInfo.Order_Product> productList = new ArrayList<>();
-        productList.add(new SubmitOrderStartPay.OrderInfo.Order_Product(orderID,
-                "一块医药订单编号"+orderID+"内商品",
-                money,
-                1));
+        productList.add(new SubmitOrderStartPay.OrderInfo.Order_Product(orderID,"订单编号"+orderID,money,1));
+
         // 创建订单
         List<SubmitOrderStartPay.OrderInfo> orderList = new ArrayList<>();
-        orderList.add(new SubmitOrderStartPay.OrderInfo(orderID,
-                money,
-                new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()),
-                "一块医药订单",
-                phone,
-                userName,
-                address,
-                productList
-        ));
+        orderList.add(new SubmitOrderStartPay.OrderInfo(orderID,money,"一块医药订单",phone,userName,address, productList));
 
         // 创建请求
-        SubmitOrderStartPay req = new SubmitOrderStartPay("MALL10004",
-                goPayType,companyID,
-                companyID,
-                userName,
-                phone,
-                address,orderList);
+        SubmitOrderStartPay req = new SubmitOrderStartPay("MALL10004",goPayType,companyID,companyID,userName,phone,address,orderList);
 
         return CCB_REQUEST(req);
     }

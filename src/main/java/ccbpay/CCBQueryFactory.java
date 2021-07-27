@@ -305,7 +305,7 @@ public class CCBQueryFactory {
             }
         }
 
-        ccb_print(reqLog);
+//        ccb_print(reqLog);
         return result;
     }
 

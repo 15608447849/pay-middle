@@ -48,7 +48,7 @@ public class CCBRequestHandle extends javax.servlet.http.HttpServlet {
         Method method = this.getClass().getDeclaredMethod(requestFunc,HttpServletRequest.class);
         method.setAccessible(true);
         String result = String.valueOf(method.invoke(this,req));
-        ccb_print(requestFunc+"\n"+result);
+        ccb_print("处理前端请求: " + requestFunc+" 响应结果: \n"+result);
         resp.getWriter().println(result);
     }
 
