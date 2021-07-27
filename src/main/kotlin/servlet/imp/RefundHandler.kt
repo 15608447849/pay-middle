@@ -5,7 +5,7 @@ import com.egzosn.pay.common.bean.RefundOrder
 import server.Launch
 import server.apyimp.AlipayImp
 import server.apyimp.WxpayImp
-import server.beans.BackResult
+import server.beans.IceResult
 import servlet.abs.ServletAbs
 import java.lang.IllegalStateException
 import java.math.BigDecimal
@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServletResponse
 /**
  * @Author: leeping
  * @Date: 2019/4/16 13:39
+ * 退款处理
  */
 open class RefundHandler : ServletAbs() {
 
@@ -42,8 +43,9 @@ open class RefundHandler : ServletAbs() {
 
 
     override fun doPost(req: HttpServletRequest, resp: HttpServletResponse) {
-        super.doPost(req, resp)
-        val result = BackResult();
+
+        val result = IceResult()
+        var questStr = "请求退款请求: "
         try {
             val contentType = req.getHeader("content-type")
 
@@ -56,7 +58,7 @@ open class RefundHandler : ServletAbs() {
                 val priceTotal = getText(req.getParameter("priceTotal")) //退款总金额
                 val isApp = getText(req.getParameter("app"),"false").toBoolean() //是不是移动支付
 
-                println("退款: type=$type ,orderNo=$orderNo,tradeNo=$tradeNo,refundNo=$refundNo,price=$price,priceTotal=$priceTotal,app=$isApp")
+                questStr += "type=$type ,orderNo=$orderNo,tradeNo=$tradeNo,refundNo=$refundNo,price=$price,priceTotal=$priceTotal,app=$isApp"
 
                 if(tradeNo.isEmpty() || tradeNo.equals("0")) throw IllegalStateException("订单号( $orderNo ) 交易流水号不正确")
 
@@ -156,6 +158,7 @@ open class RefundHandler : ServletAbs() {
             result.set(-2,e.message,false)
         }
 
+        println("$questStr\n\t响应结果: $result")
         resp.writer.println(result)
     }
 

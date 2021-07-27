@@ -6,7 +6,6 @@ import com.egzosn.pay.ali.api.AliPayConfigStorage;
 import com.egzosn.pay.ali.api.AliPayService;
 import com.egzosn.pay.ali.bean.AliTransactionType;
 import com.egzosn.pay.common.api.DefaultPayMessageHandler;
-import com.egzosn.pay.common.api.PayMessageHandler;
 import com.egzosn.pay.common.api.PayService;
 import com.egzosn.pay.common.bean.PayMessage;
 import com.egzosn.pay.common.bean.PayOrder;
@@ -17,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import properties.abs.ApplicationPropertiesBase;
 import properties.annotations.PropertiesFilePath;
 import properties.annotations.PropertiesName;
-import server.threads.IceNotifyThread;
+
 import server.Launch;
 import server.beans.IceTrade;
 
@@ -28,6 +27,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+
+import static server.beans.IceTrade.sendTrade;
 
 
 /**
@@ -64,7 +65,7 @@ public class AlipayImp extends DefaultPayMessageHandler {
 //        aliPayConfigStorage.setTest(true);
         service = new AliPayService(aliPayConfigStorage);
         service.setPayMessageHandler(new AlipayImp());
-        Launch.log.info("alipay 信息\n "+ appid +" \n " + seller +" \n "+ alipayPubKey +" \n " + privKey);
+        //Launch.log.info("alipay 信息\n "+ appid +" \n " + seller +" \n "+ alipayPubKey +" \n " + privKey);
     }
 
     //获取扫码付的二维码
@@ -104,10 +105,16 @@ public class AlipayImp extends DefaultPayMessageHandler {
 
         try {
             Map<String, Object> message = payMessage.getPayMessage();
+            if(message.get("refund_fee") != null){
+                // 退款通知
+                return payService.getPayOutMessage("success", "成功");
+            }
+            Launch.log.info("支付宝支付结果通知:");
             message.forEach((k,v) -> {
                 Launch.log.info( k+" = "+v);
             });
-            Launch.log.info("\n");
+
+
             //交易状态
             String trade_status =  message.get("trade_status").toString();
 
@@ -115,27 +122,25 @@ public class AlipayImp extends DefaultPayMessageHandler {
             if ( "TRADE_SUCCESS".equals(trade_status) || "TRADE_FINISHED".equals(trade_status)) {
 
                 //携带ice接口信息
-                String body = message.get("body").toString();
+                String body = String.valueOf(message.get("body"));
                 //第三方批次号
-                String trade_no = message.get("trade_no").toString();
+                String trade_no = String.valueOf(message.get("trade_no"));
                 //后台订单号
-                String out_trade_no = message.get("out_trade_no").toString();
+                String out_trade_no = String.valueOf(message.get("out_trade_no"));
                 //付款平台
                 String pay_type  = "alipay";
                 //交易完成时间
-                String gmt_payment = message.get("gmt_payment").toString();
+                String gmt_payment = String.valueOf(message.get("gmt_payment"));
                 //交易金额
-                String buyer_pay_amount = message.get("buyer_pay_amount").toString();
+                String buyer_pay_amount = String.valueOf(message.get("buyer_pay_amount"));
                 //
                 int state = "TRADE_SUCCESS".equals(trade_status) ?  1 :  -2;
 
                 IceTrade trade = new IceTrade(body,trade_no,out_trade_no,pay_type,gmt_payment,state+"",buyer_pay_amount,"0");
 
-                if (trade.notifyIceServer()){
+                if (sendTrade(trade)){
                     return payService.getPayOutMessage("success", "成功");
-                }else{
-                    IceNotifyThread.addTrade(trade);
-                };
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

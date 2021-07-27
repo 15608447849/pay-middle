@@ -1,6 +1,5 @@
-package ccbpay;
+package ccbpay.common;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 import org.apache.commons.codec.binary.Base64;
 import properties.abs.ApplicationPropertiesBase;
 import properties.annotations.PropertiesFilePath;

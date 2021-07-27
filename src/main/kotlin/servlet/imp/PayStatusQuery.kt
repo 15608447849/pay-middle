@@ -3,7 +3,7 @@ package servlet.imp
 
 import server.Launch
 import server.apyimp.AlipayImp
-import server.beans.BackResult
+import server.beans.IceResult
 
 
 import servlet.abs.ServletAbs
@@ -18,12 +18,12 @@ import server.apyimp.WxpayImp
 /**
  * @Author: leeping
  * @Date: 2019/4/22 10:57
+ * 查询支付结果
  */
-class QueryPay : ServletAbs(){
+class PayStatusQuery : ServletAbs(){
 
     override fun doPost(req: HttpServletRequest, resp: HttpServletResponse) {
-        super.doPost(req, resp)
-        val result = BackResult();
+        val result = IceResult()
         try {
 
             val contentType = req.getHeader("content-type")

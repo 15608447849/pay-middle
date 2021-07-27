@@ -22,14 +22,11 @@ import servlet.imp.*;
 
 import javax.servlet.DispatcherType;
 import java.io.File;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
 import java.nio.file.Paths;
 import java.util.*;
 
 import static io.undertow.servlet.Servlets.servlet;
+import static server.beans.IceTrade.readNoSendNotify;
 
 
 /**
@@ -54,6 +51,7 @@ public class Launch {
     public static String dirPath;
 
     public static void main(String[] args) throws Exception{
+        readNoSendNotify();
 
         dirPath = new File(Launch.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParent() + "/store";
         File dir = new File(dirPath);
@@ -71,15 +69,15 @@ public class Launch {
                         new PathResourceManager(Paths.get(dirPath), 16*4069L)
                 );
 
-        servletBuilder.addServlet(servlet("支付处理", PayHandler.class).addMapping("/pay"));
-        servletBuilder.addServlet(servlet("支付查询", QueryPay.class).addMapping("/query"));
+        servletBuilder.addServlet(servlet("支付处理", PrevPayHandler.class).addMapping("/pay"));
+        servletBuilder.addServlet(servlet("支付查询", PayStatusQuery.class).addMapping("/query"));
         servletBuilder.addServlet(servlet("退款", RefundHandler.class).addMapping("/refund"));
-        servletBuilder.addServlet(servlet("支付宝-结果处理-异步", AlipayResult.class).addMapping("/result/alipay"));
-        servletBuilder.addServlet(servlet("微信-结果处理-异步", WxpayResult.class).addMapping("/result/wxpay"));
+        servletBuilder.addServlet(servlet("结果处理-异步-支付宝", PayResultCallcack_alipay.class).addMapping("/result/alipay"));
+        servletBuilder.addServlet(servlet("结果处理-异步-微信", PayResultCallback_wxpay.class).addMapping("/result/wxpay"));
 
-        servletBuilder.addServlet(servlet("CCB-处理请求", CCBRequestHandle.class).addMapping("/ccb/request"));
-        servletBuilder.addServlet(servlet("CCB-支付结果接收", PayResultReceive.class).addMapping("/result/ccbpay"));
-        servletBuilder.addServlet(servlet("CCB-支付异常接收", PayAbnormalReceive.class).addMapping("/result/ccbpay/abnormal"));
+//        servletBuilder.addServlet(servlet("CCB-处理请求", CCBRequestHandle.class).addMapping("/ccb/request"));
+//        servletBuilder.addServlet(servlet("CCB-支付结果接收", PayResultReceive.class).addMapping("/result/ccbpay"));
+//        servletBuilder.addServlet(servlet("CCB-支付异常接收", PayAbnormalReceive.class).addMapping("/result/ccbpay/abnormal"));
 
         DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
         manager.deploy();
@@ -93,7 +91,7 @@ public class Launch {
 
        builder.build().start();
 
-        log.info("空间折叠,支付中间件,端口 = " + port + " , 域名 = "+ domain +" , 文件存储 = "+ dirPath);
+       log.info("空间折叠,支付中间件,端口 = " + port + " , 域名 = "+ domain +" , 文件存储 = "+ dirPath);
     }
 
     public static String printMap(Map map){

@@ -1,7 +1,6 @@
 package server.apyimp;
 
 import com.egzosn.pay.common.api.DefaultPayMessageHandler;
-import com.egzosn.pay.common.api.PayMessageHandler;
 import com.egzosn.pay.common.api.PayService;
 import com.egzosn.pay.common.bean.*;
 import com.egzosn.pay.common.exception.PayErrorException;
@@ -16,23 +15,19 @@ import properties.annotations.PropertiesFilePath;
 import properties.annotations.PropertiesName;
 import server.Launch;
 import server.beans.IceTrade;
-import server.threads.IceNotifyThread;
-
 import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
-import java.util.HashMap;
 import java.util.Map;
 
 import static properties.abs.ApplicationPropertiesBase.readPathProperties;
+import static server.beans.IceTrade.sendTrade;
 
 /**
  * @Author: leeping
@@ -111,7 +106,7 @@ public class WxpayImp  extends DefaultPayMessageHandler {
             httpConfigStorage.setKeystore(in);
             httpConfigStorage.setStorePassword(mchid);
             httpConfigStorage.setCharset("UTF-8");
-            Launch.log.info("加载微信SSL证书: "+ ssl_cert);
+            //Launch.log.info("加载微信SSL证书: "+ ssl_cert);
             return httpConfigStorage;
         }catch (Exception e){
             e.printStackTrace();
@@ -185,7 +180,7 @@ public class WxpayImp  extends DefaultPayMessageHandler {
             PayService service = isApp? service_app : service_native;
             Map<String,Object> map = service.refund(rorder);
 
-            Launch.log.info("微信退款结果: " + new Gson().toJson(map) );
+            //Launch.log.info("微信退款结果: " + new Gson().toJson(map) );
 
             try {
                 httpConfigStorage.getKeystoreInputStream().close();
@@ -237,11 +232,9 @@ public class WxpayImp  extends DefaultPayMessageHandler {
 
                 IceTrade trade = new IceTrade(body,trade_no,out_trade_no,pay_type,gmt_payment,state+"",buyer_pay_amount,pay_client_type+"");
 
-                if (trade.notifyIceServer()){
+                if (sendTrade(trade)){
                     return  payService.getPayOutMessage("SUCCESS", "OK");
-                }else{
-                    IceNotifyThread.addTrade(trade);
-                };
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

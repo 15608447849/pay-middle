@@ -9,10 +9,9 @@ import server.Launch;
  * @Author: leeping
  * @Date: 2019/4/18 15:20
  */
-public class BackResult {
+public class IceResult {
 
-    private static Gson gson = new GsonBuilder()
-            .setLongSerializationPolicy(LongSerializationPolicy.STRING).create();
+    private static Gson gson = new GsonBuilder().setLongSerializationPolicy(LongSerializationPolicy.STRING).create();
 
     public int code = 0;
     public Object data;
@@ -22,12 +21,12 @@ public class BackResult {
         return gson.toJson(this);
     }
 
-    public BackResult set(int code, Object data){
+    public IceResult set(int code, Object data){
         this.code = code;
         this.data = data;
         return this;
     }
-    public BackResult set(int code, String message,Object data){
+    public IceResult set(int code, String message, Object data){
         this.code = code;
         this.data = data;
         this.message = message;

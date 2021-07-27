@@ -8,10 +8,10 @@ import javax.servlet.http.HttpServletResponse
 /**
  * @Author: leeping
  * @Date: 2019/4/18 11:43
+ * 支付结果处理
  */
-class AlipayResult  : ServletAbs()  {
+class PayResultCallcack_alipay  : ServletAbs()  {
     override fun doPost(req: HttpServletRequest, resp: HttpServletResponse) {
-        super.doGet(req, resp)
         val result = AlipayImp.response(req)
         resp.writer.println(result)
     }

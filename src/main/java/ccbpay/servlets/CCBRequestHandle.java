@@ -9,9 +9,9 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.URLDecoder;
-import static ccbpay.CCBQueryFactory.ccb_print;
-import static ccbpay.req.OrderStatusQuery.queryOrderStatus;
-import static ccbpay.req.SubmitOrderStartPay.submitOrder;
+import static ccbpay.common.CCBQueryFactory.ccb_print;
+import static ccbpay.entitys.OrderStatusQuery.queryOrderStatus;
+import static ccbpay.entitys.OrderSubmitPay.submitOrder;
 
 
 public class CCBRequestHandle extends javax.servlet.http.HttpServlet {
@@ -26,6 +26,44 @@ public class CCBRequestHandle extends javax.servlet.http.HttpServlet {
         }
         return def;
     }
+
+    /** 支付请求 */
+    private String pay(HttpServletRequest req) throws Exception{
+        // 支付
+        String orderID = getParam(req.getParameter("orderID"),null);
+        String money = getParam(req.getParameter("money"),null);
+        String companyID = getParam(req.getParameter("companyID"),null);
+        String userName = getParam(req.getParameter("userName"),"/");
+        String phone = getParam(req.getParameter("phone"),"0");
+        String address = getParam(req.getParameter("address"),"/");
+        String payType = getParam(req.getParameter("payType"),"3");
+
+        if (orderID == null || money == null || companyID == null){
+            return "支付请求参数错误";
+        }
+        return submitOrder(Integer.parseInt(payType),companyID,userName,phone,address,orderID,money);
+    }
+
+    /** 状态查询 */
+    private String order_status(HttpServletRequest req) throws Exception{
+        // 订单状态查询
+        String orderID = getParam(req.getParameter("orderID"),null);
+        if (orderID == null){
+            return "查询订单请求参数错误";
+        }
+        return queryOrderStatus(orderID);
+    }
+
+    /** 退款请求 */
+    private String refund(HttpServletRequest req) throws Exception{
+        //退款
+        String orderID = getParam(req.getParameter("orderID"),null);
+//        String orderID = getParam(req.getParameter("orderID"),null);
+        return null;
+
+
+    }
+
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -51,40 +89,5 @@ public class CCBRequestHandle extends javax.servlet.http.HttpServlet {
         ccb_print("处理前端请求: " + requestFunc+" 响应结果: \n"+result);
         resp.getWriter().println(result);
     }
-
-    private String pay(HttpServletRequest req) throws Exception{
-        // 支付
-        String orderID = getParam(req.getParameter("orderID"),null);
-        String money = getParam(req.getParameter("money"),null);
-        String companyID = getParam(req.getParameter("companyID"),null);
-        String userName = getParam(req.getParameter("userName"),"/");
-        String phone = getParam(req.getParameter("phone"),"0");
-        String address = getParam(req.getParameter("address"),"/");
-        String payType = getParam(req.getParameter("payType"),"3");
-
-        if (orderID == null || money == null || companyID == null){
-            return "支付请求参数错误";
-        }
-        return submitOrder(Integer.parseInt(payType),companyID,userName,phone,address,orderID,money);
-    }
-
-    private String order_status(HttpServletRequest req) throws Exception{
-        // 订单状态查询
-        String orderID = getParam(req.getParameter("orderID"),null);
-        if (orderID == null){
-            return "查询订单请求参数错误";
-        }
-        return queryOrderStatus(orderID);
-    }
-
-    private String refund(HttpServletRequest req) throws Exception{
-        //退款
-        String orderID = getParam(req.getParameter("orderID"),null);
-//        String orderID = getParam(req.getParameter("orderID"),null);
-        return null;
-
-
-    }
-
 
 }

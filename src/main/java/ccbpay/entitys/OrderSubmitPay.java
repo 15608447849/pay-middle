@@ -1,4 +1,4 @@
-package ccbpay.req;
+package ccbpay.entitys;
 
 /*
  * leezp 20210707
@@ -38,73 +38,20 @@ package ccbpay.req;
  *           ProductUnit 商品单位
  * */
 
-import ccbpay.CCBQueryFactory;
+import ccbpay.common.CCBQueryFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static ccbpay.CCBQueryFactory.CCB_REQUEST;
+import static ccbpay.common.CCBQueryFactory.CCB_REQUEST;
 
 
-public class SubmitOrderStartPay extends CCBQueryFactory.CCB_QUERY_STRUCT {
+public class OrderSubmitPay extends CCBQueryFactory.CCB_QUERY_STRUCT {
 
-    private int GoPayType;
-    private int OrderIniter = 1;
-    private String BuyerUserID_ThirdSys;
-    private String BuyerUserName_ThirdSys;
-    private String SellerUserID_ThirdSys = "YKKY0001";
-    private int BuyerUserType_ThirdSys = 0;
-    private String BuyerTrueName_ThirdSys;
-    private String BuyerCompany_ThirdSys;
-    private String BuyerPhoneNum_ThirdSys;
-    private String BuyerAddress_ThirdSys;
-    private List<OrderInfo> OrderInfos;
-
-    private SubmitOrderStartPay(String TxCode,int goPayType,
-                               String buyerUserID_ThirdSys,
-                               String buyerUserName_ThirdSys,
-                               String buyerTrueName_ThirdSys,
-                               String buyerPhoneNum_ThirdSys,
-                               String buyerAddress_ThirdSys,
-                               List<OrderInfo> orderInfos) {
-        super(TxCode);
-        GoPayType = goPayType;
-        BuyerUserID_ThirdSys = buyerUserID_ThirdSys;
-        BuyerUserName_ThirdSys = buyerUserName_ThirdSys;
-        BuyerTrueName_ThirdSys = buyerTrueName_ThirdSys;
-        BuyerCompany_ThirdSys = buyerTrueName_ThirdSys;
-        BuyerPhoneNum_ThirdSys = buyerPhoneNum_ThirdSys;
-        BuyerAddress_ThirdSys = buyerAddress_ThirdSys;
-        OrderInfos = orderInfos;
-    }
 
     private static final class OrderInfo{
-        private String Order_No;
-        private String Order_Money;
-        private String Order_Time = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
-        private String Order_Tile ;
-        private String Order_BuyerPhone;
-        private String ReceiverTrueName_ThirdSys;
-        private String ReceiverCompany_ThirdSys ;
-        private String ReceiverAddress_ThirdSys;
-        private int HaveProducts = 1;
-        private List<Order_Product> Order_Products;
-
-        private OrderInfo(String order_No, String order_Money,String order_Tile, String order_BuyerPhone, String receiverTrueName_ThirdSys,
-                         String receiverAddress_ThirdSys, List<Order_Product> order_Products) {
-            Order_No = order_No;
-            Order_Money = order_Money;
-
-            Order_Tile = order_Tile;
-            Order_BuyerPhone = order_BuyerPhone;
-            ReceiverTrueName_ThirdSys = receiverTrueName_ThirdSys;
-            ReceiverCompany_ThirdSys = receiverTrueName_ThirdSys;
-            ReceiverAddress_ThirdSys = receiverAddress_ThirdSys;
-            Order_Products = order_Products;
-        }
-
         private static class Order_Product{
             private String ProductID;
             private String ProductTitle;
@@ -123,26 +70,78 @@ public class SubmitOrderStartPay extends CCBQueryFactory.CCB_QUERY_STRUCT {
             }
         }
 
+        private String Order_No;
+        private String Order_Money;
+        private String Order_Time = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+        private String Order_Tile ;
+        private String Order_BuyerPhone;
+        private String ReceiverTrueName_ThirdSys;
+        private String ReceiverCompany_ThirdSys ;
+        private String ReceiverAddress_ThirdSys;
+        private int HaveProducts = 1;
+        private List<Order_Product> Order_Products;
+
+        private OrderInfo(String order_No, String order_Money,String order_Tile, String order_BuyerPhone, String receiverTrueName_ThirdSys,
+                          String receiverAddress_ThirdSys, List<Order_Product> order_Products) {
+            Order_No = order_No;
+            Order_Money = order_Money;
+
+            Order_Tile = order_Tile;
+            Order_BuyerPhone = order_BuyerPhone;
+            ReceiverTrueName_ThirdSys = receiverTrueName_ThirdSys;
+            ReceiverCompany_ThirdSys = receiverTrueName_ThirdSys;
+            ReceiverAddress_ThirdSys = receiverAddress_ThirdSys;
+            Order_Products = order_Products;
+        }
     }
 
+
+    private int GoPayType;
+    private int OrderIniter = 1;
+    private String BuyerUserID_ThirdSys;
+    private String BuyerUserName_ThirdSys;
+    private String SellerUserID_ThirdSys = "YKKY0001";
+    private int BuyerUserType_ThirdSys = 0;
+    private String BuyerTrueName_ThirdSys;
+    private String BuyerCompany_ThirdSys;
+    private String BuyerPhoneNum_ThirdSys;
+    private String BuyerAddress_ThirdSys;
+    private List<OrderInfo> OrderInfos;
+
+    private OrderSubmitPay(String TxCode, int goPayType,
+                           String buyerUserID_ThirdSys,
+                           String buyerUserName_ThirdSys,
+                           String buyerTrueName_ThirdSys,
+                           String buyerPhoneNum_ThirdSys,
+                           String buyerAddress_ThirdSys,
+                           List<OrderInfo> orderInfos) {
+        super(TxCode);
+        GoPayType = goPayType;
+        BuyerUserID_ThirdSys = buyerUserID_ThirdSys;
+        BuyerUserName_ThirdSys = buyerUserName_ThirdSys;
+        BuyerTrueName_ThirdSys = buyerTrueName_ThirdSys;
+        BuyerCompany_ThirdSys = buyerTrueName_ThirdSys;
+        BuyerPhoneNum_ThirdSys = buyerPhoneNum_ThirdSys;
+        BuyerAddress_ThirdSys = buyerAddress_ThirdSys;
+        OrderInfos = orderInfos;
+    }
 
     @Override
     protected int RequestType() {
         return 1;
     }
 
-
     public static String submitOrder(int goPayType, String companyID, String userName, String phone, String address,String orderID, String money){
         // 创建商品
-        List<SubmitOrderStartPay.OrderInfo.Order_Product> productList = new ArrayList<>();
-        productList.add(new SubmitOrderStartPay.OrderInfo.Order_Product(orderID,"订单编号"+orderID,money,1));
+        List<OrderSubmitPay.OrderInfo.Order_Product> productList = new ArrayList<>();
+        productList.add(new OrderSubmitPay.OrderInfo.Order_Product(orderID,"订单编号"+orderID,money,1));
 
         // 创建订单
-        List<SubmitOrderStartPay.OrderInfo> orderList = new ArrayList<>();
-        orderList.add(new SubmitOrderStartPay.OrderInfo(orderID,money,"一块医药订单",phone,userName,address, productList));
+        List<OrderSubmitPay.OrderInfo> orderList = new ArrayList<>();
+        orderList.add(new OrderSubmitPay.OrderInfo(orderID,money,"一块医药订单",phone,userName,address, productList));
 
         // 创建请求
-        SubmitOrderStartPay req = new SubmitOrderStartPay("MALL10004",goPayType,companyID,companyID,userName,phone,address,orderList);
+        OrderSubmitPay req = new OrderSubmitPay("MALL10004",goPayType,companyID,companyID,userName,phone,address,orderList);
 
         return CCB_REQUEST(req);
     }

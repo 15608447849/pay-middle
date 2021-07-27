@@ -6,8 +6,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static ccbpay.CCBQueryFactory.ccb_print;
+import static ccbpay.common.CCBQueryFactory.ccb_print;
 
+/**
+ * ccb收银台支付异常时,点击 '返回商场' 访问地址
+ *
+ * */
 public class PayAbnormalReceive extends javax.servlet.http.HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

@@ -2,10 +2,9 @@ package servlet.imp
 
 import com.egzosn.pay.common.bean.PayOrder
 import server.Launch
-import server.threads.QrImageDeleteThread
 import server.apyimp.AlipayImp
 import server.apyimp.WxpayImp
-import server.beans.BackResult
+import server.beans.IceResult
 import server.beans.QrImage
 import servlet.abs.ServletAbs
 import java.math.BigDecimal
@@ -20,12 +19,11 @@ import javax.servlet.http.HttpServletResponse
 /**
  * @Author: leeping
  * @Date: 2019/4/16 13:39
+ * 预支付请求处理
  */
-open class PayHandler : ServletAbs() {
+open class PrevPayHandler : ServletAbs() {
     override fun doPost(req: HttpServletRequest, resp: HttpServletResponse) {
-        super.doPost(req, resp)
-
-        val result = BackResult();
+        val result = IceResult()
         try {
             //获取表单数据
             val map = mutableMapOf<String, String>()
@@ -65,7 +63,7 @@ open class PayHandler : ServletAbs() {
             if (appPayMap!=null){
                 result.set(1,appPayMap)
             }else{
-                QrImageDeleteThread.addQrImage(qrImage)
+
                 val qrCodeLinke = "${Launch.domain}${qrImage.link}" //返回前端二维码信息
                 result.set(1,qrCodeLinke)
             }
