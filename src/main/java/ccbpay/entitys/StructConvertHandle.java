@@ -1,5 +1,8 @@
 package ccbpay.entitys;
 
+import server.beans.IceResult;
+import server.beans.IceTrade;
+
 import java.util.List;
 
 /**
@@ -34,17 +37,17 @@ public class StructConvertHandle {
     }
 
     /**
-     *
+     * 查询结果转换
+     *IceResult  code = 200 , data = 0-待支付 1已支付 -2异常
      */
-    public static String order_status_query_result_convert(String json){
+    public static IceResult order_status_query_result_convert(String json){
 
         return null;
     }
 
-    public static String order_pay_result_convert(String json){
+    /** 支付结果转换 */
+    public static IceTrade order_pay_result_convert(String json){
+
         return null;
     }
-
-
-
 }

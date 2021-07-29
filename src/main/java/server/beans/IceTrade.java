@@ -87,6 +87,7 @@ public class IceTrade {
         this.trade_status = trade_status;
         this.buyer_pay_amount = buyer_pay_amount;
         this.pay_client_type = pay_client_type;
+        // 注册中心标识@IP:PORT@order2Server0@PayModule@payCallBack@536873173
         this.pay_request_attach = body.substring(body.lastIndexOf("@")+1);
     }
 

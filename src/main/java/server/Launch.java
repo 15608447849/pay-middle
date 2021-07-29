@@ -75,9 +75,9 @@ public class Launch {
         servletBuilder.addServlet(servlet("结果处理-异步-支付宝", PayResultCallcack_alipay.class).addMapping("/result/alipay"));
         servletBuilder.addServlet(servlet("结果处理-异步-微信", PayResultCallback_wxpay.class).addMapping("/result/wxpay"));
 
-//        servletBuilder.addServlet(servlet("CCB-处理请求", CCBRequestHandle.class).addMapping("/ccb/request"));
-//        servletBuilder.addServlet(servlet("CCB-支付结果接收", PayResultReceive.class).addMapping("/result/ccbpay"));
-//        servletBuilder.addServlet(servlet("CCB-支付异常接收", PayAbnormalReceive.class).addMapping("/result/ccbpay/abnormal"));
+        servletBuilder.addServlet(servlet("CCB-处理请求", CCBRequestHandle.class).addMapping("/ccb/request"));
+        servletBuilder.addServlet(servlet("CCB-支付结果接收", PayResultReceive.class).addMapping("/result/ccbpay"));
+        servletBuilder.addServlet(servlet("CCB-支付异常接收", PayAbnormalReceive.class).addMapping("/result/ccbpay/abnormal"));
 
         DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
         manager.deploy();

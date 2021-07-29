@@ -2,6 +2,8 @@ package ccbpay.servlets;
 
 
 
+import server.beans.IceResult;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -12,6 +14,7 @@ import java.net.URLDecoder;
 import static ccbpay.common.CCBQueryFactory.ccb_print;
 import static ccbpay.entitys.OrderStatusQuery.queryOrderStatus;
 import static ccbpay.entitys.OrderSubmitPay.submitOrder;
+import static ccbpay.entitys.StructConvertHandle.order_status_query_result_convert;
 
 
 public class CCBRequestHandle extends javax.servlet.http.HttpServlet {
@@ -51,7 +54,13 @@ public class CCBRequestHandle extends javax.servlet.http.HttpServlet {
         if (orderID == null){
             return "查询订单请求参数错误";
         }
-        return queryOrderStatus(orderID);
+        String json_ccb = queryOrderStatus(orderID);
+        System.out.println("CCB 查询订单: " + orderID +" , 结果JSON: "+ json_ccb);
+        IceResult r = order_status_query_result_convert(json_ccb);
+        if (r!=null){
+            return String.valueOf(r);
+        }
+        return json_ccb;
     }
 
     /** 退款请求 */
@@ -59,6 +68,7 @@ public class CCBRequestHandle extends javax.servlet.http.HttpServlet {
         //退款
         String orderID = getParam(req.getParameter("orderID"),null);
 //        String orderID = getParam(req.getParameter("orderID"),null);
+
         return null;
 
 
