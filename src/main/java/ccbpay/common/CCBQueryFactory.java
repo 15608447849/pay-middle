@@ -247,6 +247,8 @@ public class CCBQueryFactory {
      *   Auth ThirdSysID + TxCode + Data(RSA加密) + MD5Key->MD5
      */
     private static String sendQuery(String txCode , int requestType, String data) throws Exception{
+        ccb_print("[ccb] [" + txCode + "] sendQuery data : " + data);
+
         data = encrypt_ccb_data(data);
         String authMD5 =  getMD5(thirdSysID + txCode + data + md5Key, "UTF-8");
 

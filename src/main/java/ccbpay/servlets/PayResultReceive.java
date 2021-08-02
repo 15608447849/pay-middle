@@ -1,5 +1,7 @@
 package ccbpay.servlets;
 
+import com.alibaba.fastjson.JSON;
+import com.google.gson.Gson;
 import server.beans.IceTrade;
 
 import javax.servlet.ServletException;
@@ -31,12 +33,19 @@ public class PayResultReceive extends javax.servlet.http.HttpServlet {
 
         // 发送消息到 ice客户端
         IceTrade trade = order_pay_result_convert(data);
-        
-        if (sendTrade(trade)){ // drug后台
-            resp.getWriter().println("SUCCESS");
-        }else{
+
+        if (trade == null) {
             resp.getWriter().println("FAIL");
+            return ;
         }
+
+        ccb_print("trade result -> " + new Gson().toJson(trade));
+
+//        if (sendTrade(trade)){ // drug后台
+            resp.getWriter().println("SUCCESS");
+//        }else{
+//            resp.getWriter().println("FAIL");
+//        }
 
     }
 }

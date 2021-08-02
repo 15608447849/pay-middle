@@ -107,6 +107,7 @@ public class OrderSubmitPay extends CCBQueryFactory.CCB_QUERY_STRUCT {
     private String BuyerPhoneNum_ThirdSys;
     private String BuyerAddress_ThirdSys;
     private List<OrderInfo> OrderInfos;
+    private String Expand1;
 
     private OrderSubmitPay(String TxCode, int goPayType,
                            String buyerUserID_ThirdSys,
@@ -114,7 +115,8 @@ public class OrderSubmitPay extends CCBQueryFactory.CCB_QUERY_STRUCT {
                            String buyerTrueName_ThirdSys,
                            String buyerPhoneNum_ThirdSys,
                            String buyerAddress_ThirdSys,
-                           List<OrderInfo> orderInfos) {
+                           List<OrderInfo> orderInfos,
+                           String expand1) {
         super(TxCode);
         GoPayType = goPayType;
         BuyerUserID_ThirdSys = buyerUserID_ThirdSys;
@@ -124,6 +126,7 @@ public class OrderSubmitPay extends CCBQueryFactory.CCB_QUERY_STRUCT {
         BuyerPhoneNum_ThirdSys = buyerPhoneNum_ThirdSys;
         BuyerAddress_ThirdSys = buyerAddress_ThirdSys;
         OrderInfos = orderInfos;
+        Expand1 = expand1;
     }
 
     @Override
@@ -131,7 +134,7 @@ public class OrderSubmitPay extends CCBQueryFactory.CCB_QUERY_STRUCT {
         return 1;
     }
 
-    public static String submitOrder(int goPayType, String companyID, String userName, String phone, String address,String orderID, String money){
+    public static String submitOrder(int goPayType, String companyID, String userName, String phone, String address,String orderID, String money, String expand1){
         // 创建商品
         List<OrderSubmitPay.OrderInfo.Order_Product> productList = new ArrayList<>();
         productList.add(new OrderSubmitPay.OrderInfo.Order_Product(orderID,"订单编号"+orderID,money,1));
@@ -141,7 +144,7 @@ public class OrderSubmitPay extends CCBQueryFactory.CCB_QUERY_STRUCT {
         orderList.add(new OrderSubmitPay.OrderInfo(orderID,money,"一块医药订单",phone,userName,address, productList));
 
         // 创建请求
-        OrderSubmitPay req = new OrderSubmitPay("MALL10004",goPayType,companyID,companyID,userName,phone,address,orderList);
+        OrderSubmitPay req = new OrderSubmitPay("MALL10004",goPayType,companyID,companyID,userName,phone,address,orderList, expand1);
 
         return CCB_REQUEST(req);
     }

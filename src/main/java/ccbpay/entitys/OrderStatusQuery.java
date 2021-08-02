@@ -33,5 +33,4 @@ public class OrderStatusQuery extends CCBQueryFactory.CCB_QUERY_STRUCT {
         OrderStatusQuery req = new OrderStatusQuery(list);
         return CCB_REQUEST(req);
     }
-
 }

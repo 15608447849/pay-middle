@@ -2,6 +2,7 @@ package ccbpay.servlets;
 
 
 
+import ccbpay.entitys.OrderRefund;
 import server.beans.IceResult;
 
 import javax.servlet.ServletException;
@@ -11,6 +12,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.URLDecoder;
+
+import static ccbpay.common.CCBQueryFactory.CCB_REQUEST;
 import static ccbpay.common.CCBQueryFactory.ccb_print;
 import static ccbpay.entitys.OrderStatusQuery.queryOrderStatus;
 import static ccbpay.entitys.OrderSubmitPay.submitOrder;
@@ -44,7 +47,10 @@ public class CCBRequestHandle extends javax.servlet.http.HttpServlet {
         if (orderID == null || money == null || companyID == null){
             return "支付请求参数错误";
         }
-        return submitOrder(Integer.parseInt(payType),companyID,userName,phone,address,orderID,money);
+
+        String expand1 = "@" + companyID;
+
+        return submitOrder(Integer.parseInt(payType),companyID,userName,phone,address,orderID,money, expand1);
     }
 
     /** 状态查询 */
@@ -57,21 +63,27 @@ public class CCBRequestHandle extends javax.servlet.http.HttpServlet {
         String json_ccb = queryOrderStatus(orderID);
         System.out.println("CCB 查询订单: " + orderID +" , 结果JSON: "+ json_ccb);
         IceResult r = order_status_query_result_convert(json_ccb);
-        if (r!=null){
-            return String.valueOf(r);
-        }
-        return json_ccb;
+
+        return String.valueOf(r);
     }
 
     /** 退款请求 */
     private String refund(HttpServletRequest req) throws Exception{
         //退款
-        String orderID = getParam(req.getParameter("orderID"),null);
-//        String orderID = getParam(req.getParameter("orderID"),null);
+        String Order_No_CCB = getParam(req.getParameter("Order_No_CCB"),null);
+        if (Order_No_CCB == null){
+            return "查询订单请求参数错误";
+        }
+        String sellerUserID_thirdSys = getParam(req.getParameter("companyID"),null);
+        String payBackID = getParam(req.getParameter("refundNo"),null);
+        String payBackMoney = getParam(req.getParameter("money"),null);
 
-        return null;
+        OrderRefund orderRefund = new OrderRefund(Order_No_CCB, sellerUserID_thirdSys, payBackID, payBackMoney);
 
+        String json_ccb = CCB_REQUEST(orderRefund);
+        System.out.println("CCB 退款: " + Order_No_CCB +" , 结果JSON: "+ json_ccb);
 
+        return String.valueOf(json_ccb);
     }
 
 
