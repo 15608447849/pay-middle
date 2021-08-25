@@ -3,6 +3,10 @@ package ccbpay.servlets;
 
 
 import ccbpay.entitys.OrderRefund;
+import com.egzosn.pay.common.bean.RefundOrder;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import org.jetbrains.annotations.NotNull;
 import server.beans.IceResult;
 
 import javax.servlet.ServletException;
@@ -12,6 +16,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.URLDecoder;
+import java.util.HashMap;
+import java.util.Map;
 
 import static ccbpay.common.CCBQueryFactory.CCB_REQUEST;
 import static ccbpay.common.CCBQueryFactory.ccb_print;
@@ -67,10 +73,16 @@ public class CCBRequestHandle extends javax.servlet.http.HttpServlet {
         return String.valueOf(r);
     }
 
+    public static Map<String, Object> refundOut(@NotNull RefundOrder rorder, String compid) {
+        String json = doRefund(rorder.getTradeNo(), compid, rorder.getRefundNo(), rorder.getRefundAmount().toPlainString());
+        return new Gson().fromJson(json, new TypeToken<HashMap<String, Object>>() {}.getType());
+    }
+
     /** 退款请求 */
     private String refund(HttpServletRequest req) throws Exception{
         //退款
         String Order_No_CCB = getParam(req.getParameter("Order_No_CCB"),null);
+
         if (Order_No_CCB == null){
             return "查询订单请求参数错误";
         }
@@ -78,10 +90,14 @@ public class CCBRequestHandle extends javax.servlet.http.HttpServlet {
         String payBackID = getParam(req.getParameter("refundNo"),null);
         String payBackMoney = getParam(req.getParameter("money"),null);
 
-        OrderRefund orderRefund = new OrderRefund(Order_No_CCB, sellerUserID_thirdSys, payBackID, payBackMoney);
+        return doRefund(Order_No_CCB,sellerUserID_thirdSys,payBackID,payBackMoney);
+    }
+
+    private static String doRefund(String order_No_CCB, String sellerUserID_thirdSys, String payBackID, String payBackMoney) {
+        OrderRefund orderRefund = new OrderRefund(order_No_CCB, sellerUserID_thirdSys, payBackID, payBackMoney);
 
         String json_ccb = CCB_REQUEST(orderRefund);
-        System.out.println("CCB 退款: " + Order_No_CCB +" , 结果JSON: "+ json_ccb);
+        System.out.println("CCB 退款: " + order_No_CCB + " , 结果JSON: " + json_ccb);
 
         return String.valueOf(json_ccb);
     }

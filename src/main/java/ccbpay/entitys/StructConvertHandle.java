@@ -83,7 +83,7 @@ public class StructConvertHandle {
             }
             JSONObject orderObject = orderArray.getJSONObject(0);
             String body = rootObject.getString("Expand1");
-            String trade_no = rootObject.getString("TransID");
+            String trade_no = orderObject.getString("Order_No_CCB");
             String out_trade_no = orderObject.getString("Order_No");
             String pay_type = "ccbpay";
             String gmt_payment = null;
