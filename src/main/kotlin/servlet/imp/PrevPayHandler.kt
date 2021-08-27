@@ -2,11 +2,11 @@ package servlet.imp
 
 import com.egzosn.pay.common.bean.PayOrder
 import server.Launch
-import server.apyimp.AlipayImp
-import server.apyimp.WxpayImp
+import server.Launch.getURLDecoderParameter
+import server.payimps.AlipayImp
+import server.payimps.WxpayImp
 import server.beans.IceResult
 import server.beans.QrImage
-import servlet.abs.ServletAbs
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.util.*
@@ -21,7 +21,7 @@ import javax.servlet.http.HttpServletResponse
  * @Date: 2019/4/16 13:39
  * 预支付请求处理
  */
-open class PrevPayHandler : ServletAbs() {
+open class PrevPayHandler : javax.servlet.http.HttpServlet() {
     override fun doPost(req: HttpServletRequest, resp: HttpServletResponse) {
         val result = IceResult()
         try {
@@ -31,13 +31,13 @@ open class PrevPayHandler : ServletAbs() {
             val contentType = req.getHeader("content-type")
 
             if (contentType == "application/x-www-form-urlencoded") {
-                map["type"] = getText(req.getParameter("type"))
-                map["orderNo"] = getText(req.getParameter("orderNo"))
-                map["subject"] = getText(req.getParameter("subject"))
-                map["body"] = getText(req.getParameter("body"))
-                map["price"] = getText(req.getParameter("price"))
-                map["app"] = getText(req.getParameter("app"),"false")
-                map["openid"] = getText(req.getParameter("openid"))
+                map["type"] = getURLDecoderParameter(req.getParameter("type"),"") // 三方支付平台类型
+                map["orderNo"] = getURLDecoderParameter(req.getParameter("orderNo"),"0") // 订单号或订单流水号
+                map["subject"] = getURLDecoderParameter(req.getParameter("subject"),"") // 标题
+                map["body"] = getURLDecoderParameter(req.getParameter("body"),"") // 附加信息: 时间戳,服务标识,服务名,回调类,回调方法,公司码
+                map["price"] = getURLDecoderParameter(req.getParameter("price"),"0") // 金额
+                map["app"] = getURLDecoderParameter(req.getParameter("app"),"false") // 是否app支付
+                map["openid"] = getURLDecoderParameter(req.getParameter("openid"),"") // 微信公众号对应的支付者openID
             }
 
             Launch.printMap(map)
@@ -72,7 +72,7 @@ open class PrevPayHandler : ServletAbs() {
             result.set(-1,e)
         }
 
-        resp.writer.println(result)
+        resp.writer.println(result.toJson())
     }
 
 

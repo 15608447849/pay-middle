@@ -2,17 +2,14 @@ package servlet.imp
 
 
 import server.Launch
-import server.apyimp.AlipayImp
+import server.payimps.AlipayImp
 import server.beans.IceResult
-
-
-import servlet.abs.ServletAbs
-
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 import com.alibaba.fastjson.JSON
-import server.apyimp.WxpayImp
+import server.Launch.getURLDecoderParameter
+import server.payimps.WxpayImp
 
 
 /**
@@ -20,7 +17,7 @@ import server.apyimp.WxpayImp
  * @Date: 2019/4/22 10:57
  * 查询支付结果
  */
-class PayStatusQuery : ServletAbs(){
+class PayStatusQuery : javax.servlet.http.HttpServlet(){
 
     override fun doPost(req: HttpServletRequest, resp: HttpServletResponse) {
         val result = IceResult()
@@ -29,12 +26,12 @@ class PayStatusQuery : ServletAbs(){
             val contentType = req.getHeader("content-type")
 
             if (contentType == "application/x-www-form-urlencoded") {
-                val type = getText(req.getParameter("type"))
-                val orderNo = getText(req.getParameter("orderNo"))
-                val isApp = getText(req.getParameter("app"),"false").toBoolean()
+                val type = getURLDecoderParameter(req.getParameter("type"),"") // 支付平台类型
+                val orderNo = getURLDecoderParameter(req.getParameter("orderNo"),"0") // 支付订单号或者流水号
+                val isApp = getURLDecoderParameter(req.getParameter("app"),"false")!!.toBoolean() // 是否移动支付
 
                 if (type == "alipay") {
-                    val map =  AlipayImp.queryInfo(orderNo);
+                    val map =  AlipayImp.queryInfo(orderNo)
                     if(map!=null) {
                         val json = map["alipay_trade_query_response"]!!.toString()
                         val maps = JSON.parse(json) as Map<*, *>
@@ -44,7 +41,8 @@ class PayStatusQuery : ServletAbs(){
                         val state = if ("TRADE_SUCCESS" == trade_status) 1 else if ("WAIT_BUYER_PAY" == trade_status) 0 else -2
                         result.set(200,"查询成功",state)
                     }
-                } else if (type == "wxpay"){
+                }
+                else if (type == "wxpay"){
                     val map =  WxpayImp.queryInfo(orderNo,isApp);
                     if(map!=null) {
                         Launch.printMap(map)
@@ -89,7 +87,7 @@ class PayStatusQuery : ServletAbs(){
             result.set(-1,e.message,-2)
         }
 
-        resp.writer.println(result)
+        resp.writer.println(result.toJson())
     }
 }
 

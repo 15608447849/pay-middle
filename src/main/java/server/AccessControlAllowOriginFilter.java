@@ -39,7 +39,7 @@ public class AccessControlAllowOriginFilter implements javax.servlet.Filter{
                 sb.append("\n\t").append(headerStr).append(" = ").append(imp.getHeader(headerStr));
             }
 
-//            Launch.log.info(Thread.currentThread()+ " 接入访问: " + sb);
+            Launch.log.info(Thread.currentThread()+ " 接入访问: " + sb);
         }
 
         HttpServletRequest req = (HttpServletRequest) request;

@@ -1,9 +1,7 @@
 package server;
 
 
-import ccbpay.servlets.CCBRequestHandle;
-import ccbpay.servlets.PayAbnormalReceive;
-import ccbpay.servlets.PayResultReceive;
+
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -15,18 +13,19 @@ import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import properties.abs.ApplicationPropertiesBase;
-import properties.annotations.PropertiesFilePath;
-import properties.annotations.PropertiesName;
+import com.bottle.properties.abs.ApplicationPropertiesBase;
+import com.bottle.properties.annotations.PropertiesFilePath;
+import com.bottle.properties.annotations.PropertiesName;
 import servlet.imp.*;
 
 import javax.servlet.DispatcherType;
 import java.io.File;
+import java.net.URLDecoder;
 import java.nio.file.Paths;
 import java.util.*;
 
 import static io.undertow.servlet.Servlets.servlet;
-import static server.beans.IceTrade.readNoSendNotify;
+import static server.beans.IceTrade.resumeLocalNotifications;
 
 
 /**
@@ -51,7 +50,7 @@ public class Launch {
     public static String dirPath;
 
     public static void main(String[] args) throws Exception{
-        readNoSendNotify();
+        resumeLocalNotifications();
 
         dirPath = new File(Launch.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParent() + "/store";
         File dir = new File(dirPath);
@@ -72,12 +71,8 @@ public class Launch {
         servletBuilder.addServlet(servlet("支付处理", PrevPayHandler.class).addMapping("/pay"));
         servletBuilder.addServlet(servlet("支付查询", PayStatusQuery.class).addMapping("/query"));
         servletBuilder.addServlet(servlet("退款", RefundHandler.class).addMapping("/refund"));
-        servletBuilder.addServlet(servlet("结果处理-异步-支付宝", PayResultCallcack_alipay.class).addMapping("/result/alipay"));
-        servletBuilder.addServlet(servlet("结果处理-异步-微信", PayResultCallback_wxpay.class).addMapping("/result/wxpay"));
-
-        servletBuilder.addServlet(servlet("CCB-处理请求", CCBRequestHandle.class).addMapping("/ccb/request"));
-        servletBuilder.addServlet(servlet("CCB-支付结果接收", PayResultReceive.class).addMapping("/result/ccbpay"));
-        servletBuilder.addServlet(servlet("CCB-支付异常接收", PayAbnormalReceive.class).addMapping("/result/ccbpay/abnormal"));
+        servletBuilder.addServlet(servlet("结果处理-异步-支付宝", PayResultCallcackAlipay.class).addMapping("/result/alipay"));
+        servletBuilder.addServlet(servlet("结果处理-异步-微信", PayResultCallbackWXPay.class).addMapping("/result/wxpay"));
 
         DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
         manager.deploy();
@@ -108,4 +103,17 @@ public class Launch {
         }
         return sb.toString();
     }
+
+    public static String getURLDecoderParameter(String parameter,String def){
+        try {
+            if (parameter != null){
+                return URLDecoder.decode(parameter,"UTF-8");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return def;
+    }
+
+
 }

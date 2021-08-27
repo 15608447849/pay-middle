@@ -1,9 +1,9 @@
 package server.beans;
 
 import com.egzosn.pay.common.util.str.StringUtils;
-import properties.abs.ApplicationPropertiesBase;
-import properties.annotations.PropertiesFilePath;
-import properties.annotations.PropertiesName;
+import com.bottle.properties.abs.ApplicationPropertiesBase;
+import com.bottle.properties.annotations.PropertiesFilePath;
+import com.bottle.properties.annotations.PropertiesName;
 
 import java.io.File;
 import java.util.ArrayList;

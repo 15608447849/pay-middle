@@ -18,9 +18,6 @@ public class IceResult {
     public Object data;
     public String message;
 
-    public String toJson(){
-        return gson.toJson(this);
-    }
 
     public IceResult set(int code, Object data){
         this.code = code;
@@ -34,10 +31,8 @@ public class IceResult {
         return this;
     }
 
-    @Override
-    public String toString() {
-        String temp = toJson();
-        Launch.log.info(temp);
-        return temp;
+    public String toJson(){
+        return gson.toJson(this);
     }
+
 }

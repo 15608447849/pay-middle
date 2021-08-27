@@ -3,10 +3,10 @@ package servlet.imp
 import com.alibaba.fastjson.JSON
 import com.egzosn.pay.common.bean.RefundOrder
 import server.Launch
-import server.apyimp.AlipayImp
-import server.apyimp.WxpayImp
+import server.Launch.getURLDecoderParameter
+import server.payimps.AlipayImp
+import server.payimps.WxpayImp
 import server.beans.IceResult
-import servlet.abs.ServletAbs
 import java.lang.IllegalStateException
 import java.math.BigDecimal
 import javax.servlet.http.HttpServletRequest
@@ -18,7 +18,7 @@ import javax.servlet.http.HttpServletResponse
  * @Date: 2019/4/16 13:39
  * 退款处理
  */
-open class RefundHandler : ServletAbs() {
+open class RefundHandler : javax.servlet.http.HttpServlet() {
 
     companion object{
         @JvmField
@@ -50,13 +50,13 @@ open class RefundHandler : ServletAbs() {
             val contentType = req.getHeader("content-type")
 
             if (contentType == "application/x-www-form-urlencoded") {
-                val type = getText(req.getParameter("type"))// 平台类型
-                val tradeNo = getText(req.getParameter("tradeNo")) //支付平台相关订单号
-                val orderNo = getText(req.getParameter("orderNo")) //平台订单号
-                val refundNo = getText(req.getParameter("refundNo")) //退款单号
-                val price = getText(req.getParameter("price")) //退款金额
-                val priceTotal = getText(req.getParameter("priceTotal")) //退款总金额
-                val isApp = getText(req.getParameter("app"),"false").toBoolean() //是不是移动支付
+                val type = getURLDecoderParameter(req.getParameter("type"),"")// 平台类型
+                val tradeNo = getURLDecoderParameter(req.getParameter("tradeNo"),"0") //支付平台相关订单号
+                val orderNo = getURLDecoderParameter(req.getParameter("orderNo"),"0") //平台订单号
+                val refundNo = getURLDecoderParameter(req.getParameter("refundNo"),"0") //退款单号
+                val price = getURLDecoderParameter(req.getParameter("price"),"0") //退款金额
+                val priceTotal = getURLDecoderParameter(req.getParameter("priceTotal"),"0") //退款总金额
+                val isApp = getURLDecoderParameter(req.getParameter("app"),"false")!!.toBoolean() //是不是移动支付
 
                 questStr += "type=$type ,orderNo=$orderNo,tradeNo=$tradeNo,refundNo=$refundNo,price=$price,priceTotal=$priceTotal,app=$isApp"
 
@@ -159,7 +159,7 @@ open class RefundHandler : ServletAbs() {
         }
 
         println("$questStr\n\t响应结果: $result")
-        resp.writer.println(result)
+        resp.writer.println(result.toJson())
     }
 
 
