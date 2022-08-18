@@ -1,6 +1,7 @@
 package servlet.imp
 
 
+import bottle.util.Log4j
 import server.Launch
 import server.payimps.AlipayImp
 import server.beans.IceResult
@@ -29,7 +30,7 @@ class PayStatusQuery : javax.servlet.http.HttpServlet(){
                 val type = getURLDecoderParameter(req.getParameter("type"),"") // 支付平台类型
                 val orderNo = getURLDecoderParameter(req.getParameter("orderNo"),"0") // 支付订单号或者流水号
                 val isApp = getURLDecoderParameter(req.getParameter("app"),"false")!!.toBoolean() // 是否移动支付
-
+                Log4j.info("查询: type = $type orderNo = $orderNo isApp = $isApp")
                 if (type == "alipay") {
                     val map =  AlipayImp.queryInfo(orderNo)
                     if(map!=null) {
@@ -37,9 +38,10 @@ class PayStatusQuery : javax.servlet.http.HttpServlet(){
                         val maps = JSON.parse(json) as Map<*, *>
                         Launch.printMap(maps)
 
-                        val trade_status = maps["trade_status"]
+                        val trade_status = maps["trade_status"]?: maps["sub_msg"]
+
                         val state = if ("TRADE_SUCCESS" == trade_status) 1 else if ("WAIT_BUYER_PAY" == trade_status) 0 else -2
-                        result.set(200,"查询成功",state)
+                        result.set(200,trade_status!!.toString(),state)
                     }
                 }
                 else if (type == "wxpay"){

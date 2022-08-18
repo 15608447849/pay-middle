@@ -1,5 +1,6 @@
 package server.payimps;
 
+import bottle.util.Log4j;
 import com.egzosn.pay.common.api.DefaultPayMessageHandler;
 import com.egzosn.pay.common.api.PayService;
 import com.egzosn.pay.common.bean.*;
@@ -105,7 +106,7 @@ public class WxpayImp  extends DefaultPayMessageHandler {
             httpConfigStorage.setKeystore(in);
             httpConfigStorage.setStorePassword(mchid);
             httpConfigStorage.setCharset("UTF-8");
-            //Launch.log.info("加载微信SSL证书: "+ ssl_cert);
+            //Log4j.info("加载微信SSL证书: "+ ssl_cert);
             return httpConfigStorage;
         }catch (Exception e){
             e.printStackTrace();
@@ -179,7 +180,7 @@ public class WxpayImp  extends DefaultPayMessageHandler {
             PayService service = isApp? service_app : service_native;
             Map<String,Object> map = service.refund(rorder);
 
-            //Launch.log.info("微信退款结果: " + new Gson().toJson(map) );
+            //Log4j.info("微信退款结果: " + new Gson().toJson(map) );
 
             try {
                 httpConfigStorage.getKeystoreInputStream().close();
@@ -188,7 +189,7 @@ public class WxpayImp  extends DefaultPayMessageHandler {
             }
             return map;
         } catch (Exception e) {
-            Launch.log.error("微信退款失败",e);
+            Log4j.error("微信退款失败",e);
             throw e;
         }
     }
@@ -200,10 +201,8 @@ public class WxpayImp  extends DefaultPayMessageHandler {
     public PayOutMessage handle(PayMessage payMessage, Map<String, Object> context, PayService payService) throws PayErrorException {
         try {
             Map<String, Object> message = payMessage.getPayMessage();
-            message.forEach((k,v) -> {
-                Launch.log.info( k+" = "+v);
-            });
-            Launch.log.info("\n");
+            Log4j.info("微信支付结果通知:");
+            Launch.printMap(message);
             //交易状态
             String result_code =  message.get("result_code").toString();
             //交易状态

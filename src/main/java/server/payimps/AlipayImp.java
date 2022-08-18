@@ -2,6 +2,7 @@ package server.payimps;
 
 
 
+import bottle.util.Log4j;
 import com.egzosn.pay.ali.api.AliPayConfigStorage;
 import com.egzosn.pay.ali.api.AliPayService;
 import com.egzosn.pay.ali.bean.AliTransactionType;
@@ -65,7 +66,7 @@ public class AlipayImp extends DefaultPayMessageHandler {
 //        aliPayConfigStorage.setTest(true);
         service = new AliPayService(aliPayConfigStorage);
         service.setPayMessageHandler(new AlipayImp());
-        //Launch.log.info("alipay 信息\n "+ appid +" \n " + seller +" \n "+ alipayPubKey +" \n " + privKey);
+        //Log4j.info("alipay 信息\n "+ appid +" \n " + seller +" \n "+ alipayPubKey +" \n " + privKey);
     }
 
     //获取扫码付的二维码
@@ -109,10 +110,8 @@ public class AlipayImp extends DefaultPayMessageHandler {
                 // 退款通知
                 return payService.getPayOutMessage("success", "成功");
             }
-            Launch.log.info("支付宝支付结果通知:");
-            message.forEach((k,v) -> {
-                Launch.log.info( k+" = "+v);
-            });
+            Log4j.info("支付宝支付结果通知:");
+            Launch.printMap(message);
 
 
             //交易状态
@@ -133,7 +132,7 @@ public class AlipayImp extends DefaultPayMessageHandler {
                 String gmt_payment = String.valueOf(message.get("gmt_payment"));
                 //交易金额
                 String buyer_pay_amount = String.valueOf(message.get("buyer_pay_amount"));
-                //
+                //支付状态
                 int state = "TRADE_SUCCESS".equals(trade_status) ?  1 :  -2;
 
                 IceTrade trade = new IceTrade(body,trade_no,out_trade_no,pay_type,gmt_payment,state+"",buyer_pay_amount,"0");

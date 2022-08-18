@@ -1,5 +1,6 @@
 package server.beans;
 
+import bottle.util.Log4j;
 import com.egzosn.pay.common.bean.RefundOrder;
 import com.egzosn.pay.common.util.str.StringUtils;
 import com.google.gson.Gson;
@@ -87,7 +88,7 @@ public class IceTrade {
 
         // 0 后台订单号或流水号,1 支付平台类型,2 第三方流水号,3 交易状态,4 交易时间,5 交易金额,6 公司码,7 客户端类型
         String[] params = new String[]{out_trade_no,pay_type,trade_no,trade_status,gmt_payment,buyer_pay_amount,compid,pay_client_type};
-        Launch.log.info("[支付结果通知] ICE-请求参数:" + Arrays.toString(params));
+        Log4j.info("[支付结果通知] ICE-请求参数:" + Arrays.toString(params));
 
         String json = IceClientUtils.executeICE(iceTag,"空间折叠支付中间件",sn,cls,med,params);
 
@@ -95,21 +96,21 @@ public class IceTrade {
 
             IceResult result = new Gson().fromJson(json,IceResult.class);
             flag =  result!=null && result.code == 200;
-            Launch.log.info("[支付结果通知] ICE-返回结果:" + json+" 响应flag = "+ flag);
+            Log4j.info("[支付结果通知] ICE-返回结果:" + json+" 响应flag = "+ flag);
 
             if (flag) {
                 deleteLocalNotifyFile(this);
 
                 if (result.data!=null && Double.parseDouble(String.valueOf(result.data)) == 1.0){
-                    Launch.log.info("[支付结果通知] 5秒后自动取消订单");
+                    Log4j.info("[支付结果通知] 5秒后自动取消订单");
 
                     // 已取消订单, 自动退款
                     autoRefundTimer.schedule(new TimerTask() {
                         @Override
                         public void run() {
                             String type = pay_type;// 平台类型
-                            String tradeNo =trade_no; //平台相关订单号
-                            String refundNo = out_trade_no; //退款单号
+                            String tradeNo =trade_no; //三方平台相关订单号
+                            String refundNo = out_trade_no; //一块医药退款单号/流水号
                             String price = buyer_pay_amount; //退款金额
                             String priceTotal = buyer_pay_amount; //退款总金额
                             boolean isApp = pay_client_type.equals("1"); //是不是移动支付
@@ -117,7 +118,7 @@ public class IceTrade {
                             RefundOrder rorder = new  RefundOrder(refundNo, tradeNo,new BigDecimal(price));
                             rorder.setTotalAmount(new BigDecimal(priceTotal));
                             Map<String, Object> map = type.equals("alipay")? AlipayImp.refund(rorder): WxpayImp.refund(rorder,isApp);
-                            Launch.log.info("后台订单已取消,自动发起退款: "+ type+" , "+tradeNo+" , "+ refundNo+" , "+priceTotal+" , "+ isApp+"\n\t响应:"+map);
+                            Log4j.info("后台订单已取消,自动发起退款: "+ type+" , "+tradeNo+" , "+ refundNo+" , "+priceTotal+" , "+ isApp+"\n\t响应:"+map);
                         }
                     },5000);
 
@@ -132,11 +133,12 @@ public class IceTrade {
     public static boolean sendTrade(IceTrade trade){
         //持久化存储 JSON文件
         if (writeNotifyToLocal(trade)){
-            if (trade.notifyIceServer()){
-                return true;
-            }else{
-                return queue.offer(trade);
-            }
+//            if (trade.notifyIceServer()){
+//                return true;
+//            }else{
+//                return queue.offer(trade);
+//            }
+            return queue.offer(trade);
         }
         return false;
 

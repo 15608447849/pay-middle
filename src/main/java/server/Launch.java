@@ -2,6 +2,7 @@ package server;
 
 
 
+import bottle.util.Log4j;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -11,8 +12,6 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import com.bottle.properties.abs.ApplicationPropertiesBase;
 import com.bottle.properties.annotations.PropertiesFilePath;
 import com.bottle.properties.annotations.PropertiesName;
@@ -35,8 +34,6 @@ import static server.beans.IceTrade.resumeLocalNotifications;
 @PropertiesFilePath("/application.properties")
 public class Launch {
 
-    public static final Log log = LogFactory.getLog(Launch.class);
-
     @PropertiesName("local.port")
     public static int port;
 
@@ -44,6 +41,7 @@ public class Launch {
     public static String domain;
 
     static {
+
         ApplicationPropertiesBase.initStaticFields(Launch.class);
     }
 
@@ -86,20 +84,21 @@ public class Launch {
 
        builder.build().start();
 
-       log.info("空间折叠,支付中间件,端口 = " + port + " , 域名 = "+ domain +" , 文件存储 = "+ dirPath);
+       Log4j.info("空间折叠,支付中间件,端口 = " + port + " , 域名 = "+ domain +" , 文件存储 = "+ dirPath);
     }
 
     public static String printMap(Map map){
-        StringBuilder sb = new StringBuilder("\n");
+        StringBuilder sb = new StringBuilder();
         if( map!= null ){
+            sb.append("打印MAP hashcode = ").append(map.hashCode()).append("\n");
             Iterator it = map.entrySet().iterator();
             Map.Entry entry;
             while (it.hasNext()){
                 entry = (Map.Entry) it.next();
-                sb.append("\t").append(entry.getKey()).append(" = ").append(entry.getValue()).append(",");
+                sb.append("\t").append(entry.getKey()).append(" = ").append(entry.getValue()).append("\n");
             }
             sb.deleteCharAt(sb.length()-1);
-            log.info(sb.deleteCharAt(sb.length()-1));
+            Log4j.info(sb.deleteCharAt(sb.length()-1));
         }
         return sb.toString();
     }

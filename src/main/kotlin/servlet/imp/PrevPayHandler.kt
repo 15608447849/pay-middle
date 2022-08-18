@@ -1,5 +1,6 @@
 package servlet.imp
 
+import bottle.util.Log4j
 import com.egzosn.pay.common.bean.PayOrder
 import server.Launch
 import server.Launch.getURLDecoderParameter
@@ -51,7 +52,7 @@ open class PrevPayHandler : javax.servlet.http.HttpServlet() {
             payOrder.openid = map["openid"]
             payOrder.expirationTime = Date(System.currentTimeMillis() + 10 * 1000 * 60L);
 
-            Launch.log.info("到期时间: ${SimpleDateFormat("yyyy年-MM月dd日 HH时mm分ss秒").format(payOrder.expirationTime)}")
+            Log4j.info("到期时间: ${SimpleDateFormat("yyyy年-MM月dd日 HH时mm分ss秒").format(payOrder.expirationTime)}")
 
             val isApp = map["app"]!!.toBoolean()
             val appPayMap = when (map["type"]){

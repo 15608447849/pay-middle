@@ -2,6 +2,7 @@ package server;
 
 
 
+import bottle.util.Log4j;
 import io.undertow.servlet.spec.HttpServletRequestImpl;
 
 import javax.servlet.*;
@@ -33,13 +34,13 @@ public class AccessControlAllowOriginFilter implements javax.servlet.Filter{
             HttpServletRequestImpl imp = (HttpServletRequestImpl) request;
             sb.append(imp.getMethod() ).append(" , ").append(imp.getRequestURI());
 
-            Enumeration<String> header = imp.getHeaderNames();
+            /*Enumeration<String> header = imp.getHeaderNames();
             while (header.hasMoreElements()){
                 String headerStr = header.nextElement();
                 sb.append("\n\t").append(headerStr).append(" = ").append(imp.getHeader(headerStr));
-            }
+            }*/
 
-            Launch.log.info(Thread.currentThread()+ " 接入访问: " + sb);
+            Log4j.info(Thread.currentThread()+ " 接入访问: " + sb);
         }
 
         HttpServletRequest req = (HttpServletRequest) request;
