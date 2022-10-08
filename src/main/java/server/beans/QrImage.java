@@ -1,9 +1,11 @@
 package server.beans;
 
+import bottle.properties.abs.ApplicationPropertiesBase;
+import bottle.properties.annotations.PropertiesFilePath;
+import bottle.properties.annotations.PropertiesName;
 import com.egzosn.pay.common.util.str.StringUtils;
-import com.bottle.properties.abs.ApplicationPropertiesBase;
-import com.bottle.properties.annotations.PropertiesFilePath;
-import com.bottle.properties.annotations.PropertiesName;
+
+
 
 import java.io.File;
 import java.util.ArrayList;
@@ -31,8 +33,8 @@ public class QrImage {
                 for(QrImage image : cpList){
 
                     try{
-                        if (System.currentTimeMillis() - image.time > qrExistTime * 1000 ){
-                            if (image.qrImage.delete())  {
+                        if (System.currentTimeMillis() - image.time > qrExistTime * 1000L ){
+                            if (image.file.delete())  {
                                 list.remove(image);
                             }
                         }
@@ -51,18 +53,15 @@ public class QrImage {
     static {
         ApplicationPropertiesBase.initStaticFields(QrImage.class);
         delete_thread.setDaemon(true);
-        delete_thread.setName("clear_qr_image_thread"+delete_thread.getId());
+        delete_thread.setName("clear-qrimage-t-"+delete_thread.getId());
         delete_thread.start();
     }
 
-
-
-
     public String link;
-    public File qrImage;
+    public File file;
     private final long time;
 
-    public QrImage(String rootDir,String parentDir,String  fileName) {
+    public QrImage(String domain,String rootDir,String parentDir,String  fileName) {
 
         if (StringUtils.isNotEmpty(rootDir)){
             if (rootDir.endsWith("/")) rootDir += rootDir.substring(0,rootDir.length()-1);
@@ -78,12 +77,15 @@ public class QrImage {
         }
 
         fileName+=".png";
-        link = parentDir + fileName;
 
-        qrImage = new File(rootDir + parentDir);
-        if (!qrImage.exists()) qrImage.mkdirs();
-        qrImage = new File(qrImage,fileName);
+        file = new File(rootDir + parentDir);
+        if (!file.exists()) file.mkdirs();
+        file = new File(file,fileName);
+
+        link =  domain + parentDir + fileName;
+
         time = System.currentTimeMillis();
+
         list.add(this);
     }
 }

@@ -2,6 +2,9 @@ package server;
 
 
 
+import bottle.properties.abs.ApplicationPropertiesBase;
+import bottle.properties.annotations.PropertiesFilePath;
+import bottle.properties.annotations.PropertiesName;
 import bottle.util.Log4j;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
@@ -12,19 +15,19 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
-import com.bottle.properties.abs.ApplicationPropertiesBase;
-import com.bottle.properties.annotations.PropertiesFilePath;
-import com.bottle.properties.annotations.PropertiesName;
+import server.common.AccessControlAllowOriginFilter;
+import server.yeepay.YeepayCallbackServlet;
+import server.yeepay.YeepayMinProcPrevPayServlet;
 import servlet.imp.*;
 
 import javax.servlet.DispatcherType;
 import java.io.File;
-import java.net.URLDecoder;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Map;
 
 import static io.undertow.servlet.Servlets.servlet;
 import static server.beans.IceTrade.resumeLocalNotifications;
+import static server.yeepay.YeepayApiFunction.PAY_CALLBACK_URL_BODY;
 
 
 /**
@@ -41,7 +44,6 @@ public class Launch {
     public static String domain;
 
     static {
-
         ApplicationPropertiesBase.initStaticFields(Launch.class);
     }
 
@@ -66,52 +68,32 @@ public class Launch {
                         new PathResourceManager(Paths.get(dirPath), 16*4069L)
                 );
 
-        servletBuilder.addServlet(servlet("支付处理", PrevPayHandler.class).addMapping("/pay"));
+        servletBuilder.addServlet(servlet("预支付", PrevPayHandler.class).addMapping("/pay"));
         servletBuilder.addServlet(servlet("支付查询", PayStatusQuery.class).addMapping("/query"));
-        servletBuilder.addServlet(servlet("退款", RefundHandler.class).addMapping("/refund"));
-        servletBuilder.addServlet(servlet("结果处理-异步-支付宝", PayResultCallcackAlipay.class).addMapping("/result/alipay"));
-        servletBuilder.addServlet(servlet("结果处理-异步-微信", PayResultCallbackWXPay.class).addMapping("/result/wxpay"));
+        servletBuilder.addServlet(servlet("退款处理", RefundHandler.class).addMapping("/refund"));
+        servletBuilder.addServlet(servlet("支付结果-支付宝", PayResultCallbackAliPay.class).addMapping("/result/alipay"));
+        servletBuilder.addServlet(servlet("支付结果-微信", PayResultCallbackWXPay.class).addMapping("/result/wxpay"));
 
-        DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
-        manager.deploy();
-        HttpHandler httpHandler = manager.start();
+        servletBuilder.addServlet(servlet("易宝小程序预支付", YeepayMinProcPrevPayServlet.class).addMapping("/yeepay/minProcPay"));
+        servletBuilder.addServlet(servlet("易宝支付结果通知", YeepayCallbackServlet.class).addMapping(PAY_CALLBACK_URL_BODY+"*"));
+
+       DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
+       manager.deploy();
+
+       HttpHandler httpHandler = manager.start();
         //路径默认处理程序
-        PathHandler pathHandler = Handlers.path(httpHandler);
+       PathHandler pathHandler = Handlers.path(httpHandler);
 
-        Undertow.Builder builder = Undertow.builder();
+       Undertow.Builder builder = Undertow.builder();
 
-        builder.addHttpListener(port,"0.0.0.0",pathHandler);
+       builder.addHttpListener(port,"0.0.0.0",pathHandler);
 
        builder.build().start();
 
        Log4j.info("空间折叠,支付中间件,端口 = " + port + " , 域名 = "+ domain +" , 文件存储 = "+ dirPath);
-    }
 
-    public static String printMap(Map map){
-        StringBuilder sb = new StringBuilder();
-        if( map!= null ){
-            sb.append("打印MAP hashcode = ").append(map.hashCode()).append("\n");
-            Iterator it = map.entrySet().iterator();
-            Map.Entry entry;
-            while (it.hasNext()){
-                entry = (Map.Entry) it.next();
-                sb.append("\t").append(entry.getKey()).append(" = ").append(entry.getValue()).append("\n");
-            }
-            sb.deleteCharAt(sb.length()-1);
-            Log4j.info(sb.deleteCharAt(sb.length()-1));
-        }
-        return sb.toString();
-    }
+        String json = "{\"code\":1,\"data\":{\"wx_appid\":\"wx8d45b8ae300bb465\",\"wx_orgid\":\"gh_89d0b4f95a06\",\"orderNo\":\"2209150013770034009\",\"attr\":\"1663225395693@DRUG@order2Server0@PayModule@payCallBack@536894204\",\"price\":\"118.0\",\"subject\":\"一块医药\"}}";
 
-    public static String getURLDecoderParameter(String parameter,String def){
-        try {
-            if (parameter != null){
-                return URLDecoder.decode(parameter,"UTF-8");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return def;
     }
 
 

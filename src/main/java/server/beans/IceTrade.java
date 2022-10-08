@@ -4,15 +4,16 @@ import bottle.util.Log4j;
 import com.egzosn.pay.common.bean.RefundOrder;
 import com.egzosn.pay.common.util.str.StringUtils;
 import com.google.gson.Gson;
-import com.bottle.properties.abs.ApplicationPropertiesBase;
-import server.Launch;
+import framework.client.IceClientUtils;
 import server.payimps.AlipayImp;
 import server.payimps.WxpayImp;
-import com.bottle.IceClientUtils;
+import server.payimps.YeepayImp;
+
 
 import java.io.*;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -22,7 +23,6 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 
 public class IceTrade {
-
 
     private static Timer autoRefundTimer = new Timer();
 
@@ -90,6 +90,7 @@ public class IceTrade {
         String[] params = new String[]{out_trade_no,pay_type,trade_no,trade_status,gmt_payment,buyer_pay_amount,compid,pay_client_type};
         Log4j.info("[支付结果通知] ICE-请求参数:" + Arrays.toString(params));
 
+        if (iceTag.startsWith("预留参数")) iceTag = "DRUG"; // 兼容处理
         String json = IceClientUtils.executeICE(iceTag,"空间折叠支付中间件",sn,cls,med,params);
 
         if (StringUtils.isNotEmpty(json)){
@@ -117,8 +118,19 @@ public class IceTrade {
 
                             RefundOrder rorder = new  RefundOrder(refundNo, tradeNo,new BigDecimal(price));
                             rorder.setTotalAmount(new BigDecimal(priceTotal));
-                            Map<String, Object> map = type.equals("alipay")? AlipayImp.refund(rorder): WxpayImp.refund(rorder,isApp);
-                            Log4j.info("后台订单已取消,自动发起退款: "+ type+" , "+tradeNo+" , "+ refundNo+" , "+priceTotal+" , "+ isApp+"\n\t响应:"+map);
+
+                            Log4j.info("后台订单已取消,自动尝试发起退款: type="+ type+" , tradeNo="+tradeNo+" , refundNo="+ refundNo+" , priceTotal="+priceTotal+" , isApp="+ isApp);
+                            if (type.equals("alipay")){
+                                AlipayImp.refund(rorder);
+                            }
+                            if (type.equals("wxpay")){
+                                WxpayImp.refund(rorder,isApp);
+                            }
+                            if (type.equals("yeepay")){
+                                YeepayImp.refund(refundNo,refundNo,tradeNo,price);
+                            }
+
+
                         }
                     },5000);
 
@@ -154,7 +166,7 @@ public class IceTrade {
             try(BufferedReader bf = new BufferedReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8))){
                 String json = bf.readLine();
                 IceTrade trade = new Gson().fromJson(json,IceTrade.class);
-                System.out.println("本地恢复支付结果通知: " + f.getName()+"\n\t"+json);
+                Log4j.debug("本地恢复支付结果通知: " + f.getName()+"\n\t"+json);
                 queue.put(trade);
             }catch (Exception e){
                 e.printStackTrace();
@@ -171,7 +183,7 @@ public class IceTrade {
         if(!fileDict.exists()) fileDict.mkdirs();
         File f = new File(fileDict,fileName);
 
-        try(BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8))){
+        try(BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(f.toPath()), StandardCharsets.UTF_8))){
             bw.write(json);
             bw.flush();
             return true;

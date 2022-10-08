@@ -2,7 +2,13 @@ package server.payimps;
 
 
 
+import bottle.properties.abs.ApplicationPropertiesBase;
+import bottle.properties.annotations.PropertiesFilePath;
+import bottle.properties.annotations.PropertiesName;
+import bottle.tuples.Tuple2;
 import bottle.util.Log4j;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.egzosn.pay.ali.api.AliPayConfigStorage;
 import com.egzosn.pay.ali.api.AliPayService;
 import com.egzosn.pay.ali.bean.AliTransactionType;
@@ -14,22 +20,23 @@ import com.egzosn.pay.common.bean.PayOutMessage;
 import com.egzosn.pay.common.bean.RefundOrder;
 import com.egzosn.pay.common.exception.PayErrorException;
 import org.jetbrains.annotations.NotNull;
-import com.bottle.properties.abs.ApplicationPropertiesBase;
-import com.bottle.properties.annotations.PropertiesFilePath;
-import com.bottle.properties.annotations.PropertiesName;
+
+
 
 import server.Launch;
 import server.beans.IceTrade;
+import server.beans.QrImage;
+import server.common.CommFunc;
 
 
 import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
 import static server.beans.IceTrade.sendTrade;
+import static server.common.CommFunc.getMapStr;
 
 
 /**
@@ -49,7 +56,7 @@ public class AlipayImp extends DefaultPayMessageHandler {
     @PropertiesName("alipay.self.privkey")
     private static String privKey;
 
-    private static PayService service;
+    private static AliPayService service;
 
     static {
         ApplicationPropertiesBase.initStaticFields(AlipayImp.class);
@@ -69,16 +76,110 @@ public class AlipayImp extends DefaultPayMessageHandler {
         //Log4j.info("alipay 信息\n "+ appid +" \n " + seller +" \n "+ alipayPubKey +" \n " + privKey);
     }
 
-    //获取扫码付的二维码
-    public static Map execute(final PayOrder payOrder,final File qrImage,boolean isApp) throws Exception{
+    //获取扫码付的二维码或预支付信息
+    public static void create(boolean isApp,@NotNull PayOrder payOrder,@NotNull QrImage qrImage,@NotNull Map<String,Object> prevPayFieldMap) throws Exception{
         if (isApp){
+            // 移动原生APP
             payOrder.setTransactionType(AliTransactionType.APP);
-            return service.orderInfo(payOrder);
+            Map<String, Object> map = service.orderInfo(payOrder);
+            prevPayFieldMap.putAll(map);
+        }else {
+            //二维码
+            payOrder.setTransactionType(AliTransactionType.SWEEPPAY);//扫码付款
+            BufferedImage image = service.genQrPay(payOrder);
+            ImageIO.write(image, "png", qrImage.file);
         }
-        payOrder.setTransactionType(AliTransactionType.SWEEPPAY);//扫码付款
-        BufferedImage image = service.genQrPay(payOrder);
-        ImageIO.write(image, "png", qrImage);
-        return null;
+
+    }
+
+    //查询信息
+    public static Tuple2<Integer,String> query(@NotNull String orderNo) {
+        try {
+            Map<String, Object> map = service.query("", orderNo);
+            Log4j.info("支付宝查询结果: " + getMapStr(map) );
+
+            if (map!=null){
+                String json = String.valueOf(map.getOrDefault("alipay_trade_query_response",""));
+                JSONObject jsonObject = JSON.parseObject(json);
+                String trade_status = jsonObject.getString("trade_status");
+                if (trade_status == null) trade_status = jsonObject.getString("sub_msg");
+                if (trade_status!=null){
+                    if (trade_status.equals("TRADE_SUCCESS")){
+                        return new Tuple2<>(1,"已支付");
+                    }
+                    if (trade_status.equals("WAIT_BUYER_PAY")){
+                        return new Tuple2<>(0,"待支付");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log4j.error(e);
+            return new Tuple2<>(-2,"异常 "+ e);
+        }
+        return new Tuple2<>(-2,"支付宝响应失败");
+    }
+
+    //退款
+    public static Tuple2<Boolean,String> refund(@NotNull RefundOrder rorder) {
+        try {
+            Map<String, Object> map = service.refund(rorder);
+            Log4j.info("支付宝退款响应: "+ getMapStr(map));
+            if (map!=null){
+                String json = String.valueOf(map.getOrDefault("alipay_trade_refund_response",""));
+                JSONObject jsonObject = JSON.parseObject(json);
+                int code = jsonObject.getInteger("code");
+                if (code == 10000){
+                    String fund_change = jsonObject.getString("fund_change");
+                    if (fund_change.equals("Y")) {
+                        return new Tuple2<>(true,"退款成功");
+                    }
+                    if (fund_change.equals("N")) {
+                        return new Tuple2<>(false,"已申请退款,请勿重复提交");
+                    }
+                }else {
+                    String sub_code = jsonObject.getString("sub_code");
+
+                    switch (sub_code){
+                        case  "ACQ.SYSTEM_ERROR":
+                            sub_code = "系统错误,请使用相同的参数再次调用";
+                            break;
+                        case  "ACQ.INVALID_PARAMETER":
+                            sub_code = "参数无效,请求参数有错，重新检查请求后，再调用退款";
+                            break;
+                        case  "ACQ.SELLER_BALANCE_NOT_ENOUGH":
+                            sub_code = "卖家余额不足,商户支付宝账户充值后重新发起退款即可";
+                            break;
+                        case  "ACQ.REFUND_AMT_NOT_EQUAL_TOTAL":
+                            sub_code = "退款金额超限,检查退款金额是否正确，重新修改请求后，重新发起退款";
+                            break;
+                        case  "ACQ.TRADE_NOT_EXIST":
+                            sub_code = "交易不存在,检查请求中的交易号和商户订单号是否正确，确认后重新发起";
+                            break;
+                        case "ACQ.TRADE_HAS_FINISHED":
+                            sub_code = "交易已完结,该交易已完结，不允许进行退款，确认请求的退款的交易信息是否正确";
+                            break;
+                        case  "ACQ.TRADE_STATUS_ERROR":
+                            sub_code = "交易状态非法,查询交易，确认交易是否已经付款";
+                            break;
+                        case  "ACQ.DISCORDANT_REPEAT_REQUEST":
+                            sub_code = "不一致的请求,检查该退款号是否已退过款或更换退款号重新发起请求";
+                            break;
+                        case   "ACQ.REASON_TRADE_REFUND_FEE_ERR":
+                            sub_code = "退款金额无效,检查退款请求的金额是否正确请使用相同的参数再次调用";
+                            break;
+                        case  "ACQ.TRADE_NOT_ALLOW_REFUND":
+                            sub_code = "当前交易不允许退款,检查当前交易的状态是否为交易成功状态以及签约的退款属性是否允许退款，确认后，重新发起请求";
+                            break;
+                    }
+                    return new Tuple2<>(false,sub_code);
+                }
+
+            }
+        } catch (Exception e) {
+            Log4j.error(e);
+            return new Tuple2<>(false,"异常 "+ e);
+        }
+        return new Tuple2<>(false,"支付宝响应失败");
     }
 
     //支付回调
@@ -86,19 +187,9 @@ public class AlipayImp extends DefaultPayMessageHandler {
         try {
             return service.payBack(req.getParameterMap(), req.getInputStream()).toMessage();
         } catch (IOException e) {
-            e.printStackTrace();
+            Log4j.error(e);
         }
         return "fail";
-    }
-
-    //查询信息
-    public static Map<String, Object>  queryInfo(@NotNull String orderNo) {
-        return service.query("", orderNo);
-    }
-
-    //退款
-    public static Map<String, Object> refund(@NotNull RefundOrder rorder) {
-        return service.refund(rorder);
     }
 
     @Override
@@ -106,13 +197,12 @@ public class AlipayImp extends DefaultPayMessageHandler {
 
         try {
             Map<String, Object> message = payMessage.getPayMessage();
+            Log4j.info("支付宝支付结果通知: " + getMapStr(message) );
+
             if(message.get("refund_fee") != null){
                 // 退款通知
                 return payService.getPayOutMessage("success", "成功");
             }
-            Log4j.info("支付宝支付结果通知:");
-            Launch.printMap(message);
-
 
             //交易状态
             String trade_status =  message.get("trade_status").toString();
@@ -142,7 +232,7 @@ public class AlipayImp extends DefaultPayMessageHandler {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log4j.error(e);
         }
         return payService.getPayOutMessage("fail", "失败");
     }

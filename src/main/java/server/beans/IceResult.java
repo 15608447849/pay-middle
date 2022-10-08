@@ -11,9 +11,7 @@ import server.Launch;
  * @Date: 2019/4/18 15:20
  */
 public class IceResult {
-
-    private static Gson gson = new GsonBuilder().setLongSerializationPolicy(LongSerializationPolicy.STRING).create();
-
+    private static final Gson gson = new GsonBuilder().setLongSerializationPolicy(LongSerializationPolicy.STRING).create();
     public int code = 0;
     public Object data;
     public String message;
@@ -32,6 +30,9 @@ public class IceResult {
     }
 
     public String toJson(){
+        if (data instanceof Throwable){
+            this.data = String.valueOf(data);
+        }
         return gson.toJson(this);
     }
 

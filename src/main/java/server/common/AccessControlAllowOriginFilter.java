@@ -1,4 +1,4 @@
-package server;
+package server.common;
 
 
 
@@ -28,20 +28,7 @@ public class AccessControlAllowOriginFilter implements javax.servlet.Filter{
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-
-        if (request instanceof HttpServletRequestImpl){
-            StringBuilder sb = new StringBuilder();
-            HttpServletRequestImpl imp = (HttpServletRequestImpl) request;
-            sb.append(imp.getMethod() ).append(" , ").append(imp.getRequestURI());
-
-            /*Enumeration<String> header = imp.getHeaderNames();
-            while (header.hasMoreElements()){
-                String headerStr = header.nextElement();
-                sb.append("\n\t").append(headerStr).append(" = ").append(imp.getHeader(headerStr));
-            }*/
-
-            Log4j.info(Thread.currentThread()+ " 接入访问: " + sb);
-        }
+        Log4j.info(Thread.currentThread()+ " 接入访问: " + request);
 
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse resp = (HttpServletResponse) response;
