@@ -4,11 +4,11 @@ import bottle.util.Log4j
 import com.egzosn.pay.common.bean.PayOrder
 import server.Launch
 import server.common.CommFunc.getURLDecoderParameter
-import server.payimps.AlipayImp
-import server.payimps.WxpayImp
+import server.yeepay.payimps.AlipayImp
+import server.yeepay.payimps.WxpayImp
 import server.beans.IceResult
 import server.beans.QrImage
-import server.payimps.YeepayImp
+import server.yeepay.payimps.YeepayImp
 import java.lang.IllegalArgumentException
 import java.math.BigDecimal
 import java.text.SimpleDateFormat

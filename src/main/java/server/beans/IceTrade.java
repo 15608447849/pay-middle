@@ -5,9 +5,9 @@ import com.egzosn.pay.common.bean.RefundOrder;
 import com.egzosn.pay.common.util.str.StringUtils;
 import com.google.gson.Gson;
 import framework.client.IceClientUtils;
-import server.payimps.AlipayImp;
-import server.payimps.WxpayImp;
-import server.payimps.YeepayImp;
+import server.yeepay.payimps.AlipayImp;
+import server.yeepay.payimps.WxpayImp;
+import server.yeepay.payimps.YeepayImp;
 
 
 import java.io.*;
@@ -24,16 +24,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class IceTrade {
 
-    private static Timer autoRefundTimer = new Timer();
 
+    private static final Timer autoRefundTimer = new Timer(true);
     private static LinkedBlockingQueue<IceTrade> queue = new LinkedBlockingQueue<>();
 
-    private static Thread notify_thread = new Thread(() -> {
+    private static final Thread notify_thread = new Thread(() -> {
         while (true){
             try{
                 IceTrade trade = queue.take();
                 while (!trade.notifyIceServer()) {
-                    Thread.sleep(500);
+                    Thread.sleep(1000 );
                 }
             }catch (Exception e){
                 e.printStackTrace();
@@ -76,7 +76,7 @@ public class IceTrade {
     }
 
     private boolean notifyIceServer() {
-        boolean flag = false;
+
         // 时间戳@服务标识@服务名@回调类名@回调方法@公司码
         String[] attrArr = this.pay_request_attach.split("@");
 
@@ -92,64 +92,65 @@ public class IceTrade {
 
         if (iceTag.startsWith("预留参数")) iceTag = "DRUG"; // 兼容处理
         String json = IceClientUtils.executeICE(iceTag,"空间折叠支付中间件",sn,cls,med,params);
-
+        boolean isSuccess = false;
         if (StringUtils.isNotEmpty(json)){
 
-            IceResult result = new Gson().fromJson(json,IceResult.class);
-            flag =  result!=null && result.code == 200;
-            Log4j.info("[支付结果通知] ICE-返回结果:" + json+" 响应flag = "+ flag);
+            final IceResult result = new Gson().fromJson(json,IceResult.class);
+            isSuccess =  result!=null && result.code == 200;
+            Log4j.info("[业务系统处理支付结果通知] ICE-返回结果:" + json+" 处理成功标识 = "+ isSuccess);
 
-            if (flag) {
+            if (isSuccess) {
                 deleteLocalNotifyFile(this);
 
-                if (result.data!=null && Double.parseDouble(String.valueOf(result.data)) == 1.0){
-                    Log4j.info("[支付结果通知] 5秒后自动取消订单");
-
-                    // 已取消订单, 自动退款
-                    autoRefundTimer.schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            String type = pay_type;// 平台类型
-                            String tradeNo =trade_no; //三方平台相关订单号
-                            String refundNo = out_trade_no; //一块医药退款单号/流水号
-                            String price = buyer_pay_amount; //退款金额
-                            String priceTotal = buyer_pay_amount; //退款总金额
-                            boolean isApp = pay_client_type.equals("1"); //是不是移动支付
-
-                            RefundOrder rorder = new  RefundOrder(refundNo, tradeNo,new BigDecimal(price));
-                            rorder.setTotalAmount(new BigDecimal(priceTotal));
-
-                            Log4j.info("后台订单已取消,自动尝试发起退款: type="+ type+" , tradeNo="+tradeNo+" , refundNo="+ refundNo+" , priceTotal="+priceTotal+" , isApp="+ isApp);
-                            if (type.equals("alipay")){
-                                AlipayImp.refund(rorder);
-                            }
-                            if (type.equals("wxpay")){
-                                WxpayImp.refund(rorder,isApp);
-                            }
-                            if (type.equals("yeepay")){
-                                YeepayImp.refund(refundNo,refundNo,tradeNo,price);
-                            }
-
-
-                        }
-                    },5000);
-
-                }
+                autoRefundAtm(result);
             }
         }
 
-        return flag;
+        return isSuccess;
+    }
+
+    /* 自动退款 */
+    private void autoRefundAtm(IceResult result) {
+        // code == 200 && data>0 标识需要自动退款
+        if (result.data!=null && Double.parseDouble(String.valueOf(result.data)) > 0){
+            // 已取消或已支付订单, 自动退款
+            autoRefundTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+
+                    String type = pay_type;// 平台类型
+                    String tradeNo = trade_no; //三方平台相关订单号
+                    String refundNo = out_trade_no; //一块医药退款单号/流水号
+                    String price = buyer_pay_amount; //退款金额
+                    String priceTotal = buyer_pay_amount; //退款总金额
+                    boolean isApp = pay_client_type.equals("1"); //是不是移动支付
+
+                    RefundOrder rorder = new  RefundOrder(refundNo, tradeNo,new BigDecimal(price));
+                    rorder.setTotalAmount(new BigDecimal(priceTotal));
+                    Log4j.info("[业务系统处理支付结果通知] result.data="+result.data+" 进行自动退款:\n\t"
+                            +"type="+ type+" , tradeNo="+tradeNo+" , refundNo="+ refundNo+" , priceTotal="+priceTotal+" , isApp="+ isApp);
+
+                    if (type.equals("alipay")){
+                        AlipayImp.refund(rorder);
+                    }
+                    if (type.equals("wxpay")){
+                        WxpayImp.refund(rorder,isApp);
+                    }
+                    if (type.equals("yeepay")){
+                        YeepayImp.refund(refundNo,refundNo,tradeNo,price);
+                    }
+
+                }
+            },5000);
+
+        }
     }
 
     // 发送支付结果到一块医药业务后台
     public static boolean sendTrade(IceTrade trade){
         //持久化存储 JSON文件
         if (writeNotifyToLocal(trade)){
-//            if (trade.notifyIceServer()){
-//                return true;
-//            }else{
-//                return queue.offer(trade);
-//            }
+
             return queue.offer(trade);
         }
         return false;
@@ -190,7 +191,7 @@ public class IceTrade {
         }catch (Exception e){
             e.printStackTrace();
         }
-       return false;
+        return false;
     }
 
     private void deleteLocalNotifyFile(IceTrade trade) {

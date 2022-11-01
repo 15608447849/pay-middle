@@ -2,6 +2,7 @@ package server;
 
 
 
+import bottle.objectref.ClassUtil;
 import bottle.properties.abs.ApplicationPropertiesBase;
 import bottle.properties.annotations.PropertiesFilePath;
 import bottle.properties.annotations.PropertiesName;
@@ -22,6 +23,8 @@ import servlet.imp.*;
 
 import javax.servlet.DispatcherType;
 import java.io.File;
+import java.net.URI;
+import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Map;
 
@@ -45,6 +48,23 @@ public class Launch {
 
     static {
         ApplicationPropertiesBase.initStaticFields(Launch.class);
+        initLibsJar();
+    }
+
+    private static void initLibsJar() {
+        File file = new File("./runtimeLibs");
+        Log4j.info("运行时jar包路径: "+ file.toURI());
+        if (file.exists() && file.isDirectory()){
+            File[] files = file.listFiles();
+            if (files == null) return;
+
+            for (File f : files) {
+                if (f.getName().endsWith(".jar")){
+                    Log4j.info("加载>> " + f.toURI());
+                    ClassUtil.hotLoadJarFile("jar:"+f.toURI()+"!/");
+                }
+            }
+        }
     }
 
     public static String dirPath;
@@ -91,8 +111,6 @@ public class Launch {
        builder.build().start();
 
        Log4j.info("空间折叠,支付中间件,端口 = " + port + " , 域名 = "+ domain +" , 文件存储 = "+ dirPath);
-
-        String json = "{\"code\":1,\"data\":{\"wx_appid\":\"wx8d45b8ae300bb465\",\"wx_orgid\":\"gh_89d0b4f95a06\",\"orderNo\":\"2209150013770034009\",\"attr\":\"1663225395693@DRUG@order2Server0@PayModule@payCallBack@536894204\",\"price\":\"118.0\",\"subject\":\"一块医药\"}}";
 
     }
 

@@ -1,4 +1,4 @@
-package server.payimps;
+package server.yeepay.payimps;
 
 
 
@@ -26,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import server.Launch;
 import server.beans.IceTrade;
 import server.beans.QrImage;
-import server.common.CommFunc;
 
 
 import javax.imageio.ImageIO;

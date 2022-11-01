@@ -1,6 +1,6 @@
 package servlet.imp
 
-import server.payimps.AlipayImp
+import server.yeepay.payimps.AlipayImp
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 

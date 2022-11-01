@@ -1,6 +1,6 @@
 package servlet.imp
 
-import server.payimps.WxpayImp
+import server.yeepay.payimps.WxpayImp
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 

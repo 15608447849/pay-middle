@@ -1,12 +1,10 @@
-package server.payimps;
+package server.yeepay.payimps;
 
 import bottle.properties.abs.ApplicationPropertiesBase;
 import bottle.properties.annotations.PropertiesFilePath;
 import bottle.properties.annotations.PropertiesName;
 import bottle.tuples.Tuple2;
 import bottle.util.Log4j;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.egzosn.pay.common.api.DefaultPayMessageHandler;
 import com.egzosn.pay.common.api.PayService;
 import com.egzosn.pay.common.bean.*;

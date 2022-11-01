@@ -45,12 +45,13 @@ public class YeepayMinProcPrevPayServlet extends javax.servlet.http.HttpServlet 
             String prePayTn = tuple.getValue0();
             String errmsg = tuple.getValue1();
             if (prePayTn == null) throw new IllegalStateException("易宝支平台微信预支付错误"+ ( errmsg!=null ? ","+ errmsg : ".") );
-            result.set(1,prePayTn);
+            result.set(200,prePayTn);
 
         } catch (Exception e) {
             Log4j.error(e);
             result.set(-1,e.getMessage());
         }
+        Log4j.info("********************小程序返回结果: "+ result.toJson());
         resp.getWriter().println(result.toJson());
     }
 }

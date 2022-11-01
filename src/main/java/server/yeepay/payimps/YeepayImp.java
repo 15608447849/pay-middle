@@ -1,4 +1,4 @@
-package server.payimps;
+package server.yeepay.payimps;
 
 import bottle.tuples.Tuple2;
 import bottle.util.Log4j;

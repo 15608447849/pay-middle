@@ -57,7 +57,9 @@ import static server.common.CommFunc.getMapStr;
 @PropertiesFilePath("/yeepay_onek.properties")
 public class YeepayApiFunction {
 
-    private static final String PUBLIC_IP_HOST = localHostPublicNetIpAddr();
+//    private static final String PUBLIC_IP_HOST = localHostPublicNetIpAddr();
+    private static final String PUBLIC_IP_HOST = "0.0.0.0";
+
 
     public static final String PAY_CALLBACK_URL_BODY = "/yeepay/result/";
 
@@ -114,13 +116,14 @@ public class YeepayApiFunction {
                     httpClient.setReadTimeout(30000);
                     httpClient.setMaxConnTotal(200);
                     httpClient.setMaxConnPerRoute(100);
+
                     yopSdkConfig.setYopHttpClientConfig(httpClient);
 
                     YopCertStore yopCertStore = new YopCertStore();
                     yopCertStore.setEnable(true);
                     yopCertStore.setLazy(false);
                     yopSdkConfig.setYopCertStore(yopCertStore);
-
+                    yopSdkConfig.setTrustAllCerts(true);
                 } catch (Exception e) {
                     Log4j.error("Yeepay config 初始化失败",e);
                 }
@@ -509,7 +512,50 @@ public class YeepayApiFunction {
 
 
 
+    public static String wechat_config_add(){
+        try {
+            YopClient yopClient = YopClientBuilder.builder().build();
+            YopRequest yopRequest = new YopRequest("/rest/v2.0/aggpay/wechat-config/add", "POST");
+            yopRequest.addParameter("parentMerchantNo",parentMerchantNo);
+            yopRequest.addParameter("merchantNo", parentMerchantNo);
+            List<Map<String,String>> list = new ArrayList<Map<String,String>>(){};
+            list.add(new HashMap<String,String>(){{
+                put("appId",wx_midproc_appid);
+                put("appSecret",wx_midproc_appSecret);
+                put("appIdType","MINI_PROGRAM");
+            }});
 
+            yopRequest.addParameter("appIdList", JSON.toJSONString(list));
+
+
+            Log4j.info("查询 请求参数:\t"+yopRequest.getParameters());
+
+            YopResponse yopResponse = yopClient.request(yopRequest);
+            String response = yopResponse.getStringResult();
+            Log4j.info("查询 请求结果:\t"+response);
+            return response;
+        } catch (Exception e) {
+            Log4j.error(e);
+        }
+        return null;
+    }
+
+    public static String wechat_config_query(){
+        try {
+            YopClient yopClient = YopClientBuilder.builder().build();
+            YopRequest yopRequest = new YopRequest("/rest/v2.0/aggpay/wechat-config/query", "GET");
+            yopRequest.addParameter("parentMerchantNo",parentMerchantNo);
+            yopRequest.addParameter("merchantNo", parentMerchantNo);
+            Log4j.info("查询 请求参数:\t"+yopRequest.getParameters());
+            YopResponse yopResponse = yopClient.request(yopRequest);
+            String response = yopResponse.getStringResult();
+            Log4j.info("查询 请求结果:\t"+response);
+            return response;
+        } catch (Exception e) {
+            Log4j.error(e);
+        }
+        return null;
+    }
     public static void main(String[] args)  {
 //       String resp = createPayOrderMobileApp("ALIPAY","USER_SCAN",null,
 //                "536674842@prevPay@callback", "202209090001", new BigDecimal("0.01"), "一块医药",
@@ -530,7 +576,12 @@ public class YeepayApiFunction {
 //        System.out.println(decryptMsg);
 
 
-        refundPayOrderQuery("2209220013785835007","2209220013785835007001","1013202209220000004428424545");
+//        refundPayOrderQuery("2209220013785835007","2209220013785835007001","1013202209220000004428424545");
+//        wechat_config_add();
+//        wechat_config_query();
+        Log4j.info("李世平");
+        System.out.println("name : 李世平");
+
     }
 
 }

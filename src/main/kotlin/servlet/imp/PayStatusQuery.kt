@@ -2,16 +2,14 @@ package servlet.imp
 
 
 import bottle.util.Log4j
-import server.payimps.AlipayImp
+import server.yeepay.payimps.AlipayImp
 import server.beans.IceResult
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-import com.alibaba.fastjson.JSON
 import server.common.CommFunc.getURLDecoderParameter
-import server.common.CommFunc
-import server.payimps.WxpayImp
-import server.payimps.YeepayImp
+import server.yeepay.payimps.WxpayImp
+import server.yeepay.payimps.YeepayImp
 import java.lang.IllegalArgumentException
 
 
