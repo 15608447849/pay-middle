@@ -519,20 +519,38 @@ public class YeepayApiFunction {
             yopRequest.addParameter("parentMerchantNo",parentMerchantNo);
             yopRequest.addParameter("merchantNo", parentMerchantNo);
             List<Map<String,String>> list = new ArrayList<Map<String,String>>(){};
-            list.add(new HashMap<String,String>(){{
+            list.add(new HashMap<String,String>(){
+                {
                 put("appId",wx_midproc_appid);
                 put("appSecret",wx_midproc_appSecret);
                 put("appIdType","MINI_PROGRAM");
-            }});
+                }
+            });
+
+            list.add(new HashMap<String,String>(){
+                {
+                    put("appId","wx6e72dac3e21c3b97");
+                    put("appSecret","c47ef8343c9b93ad299c54f5242810d8");
+                    put("appIdType","OFFICIAL_ACCOUNT");
+                }
+            });
+
+            list.add(new HashMap<String,String>(){
+                {
+                    put("appId","wxed67c3663806cb77");
+                    put("appSecret","a66bd4ba03322b4788a58000cf4370cc");
+                    put("appIdType","OFFICIAL_ACCOUNT");
+                }
+            });
 
             yopRequest.addParameter("appIdList", JSON.toJSONString(list));
 
 
-            Log4j.info("查询 请求参数:\t"+yopRequest.getParameters());
+            Log4j.info("添加 请求参数:\t"+yopRequest.getParameters());
 
             YopResponse yopResponse = yopClient.request(yopRequest);
             String response = yopResponse.getStringResult();
-            Log4j.info("查询 请求结果:\t"+response);
+            Log4j.info("添加 请求结果:\t"+response);
             return response;
         } catch (Exception e) {
             Log4j.error(e);
@@ -577,10 +595,10 @@ public class YeepayApiFunction {
 
 
 //        refundPayOrderQuery("2209220013785835007","2209220013785835007001","1013202209220000004428424545");
-//        wechat_config_add();
+        wechat_config_add();
 //        wechat_config_query();
-        Log4j.info("李世平");
-        System.out.println("name : 李世平");
+//        Log4j.info("李世平");
+//        System.out.println("name : 李世平");
 
     }
 
