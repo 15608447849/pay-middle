@@ -26,19 +26,14 @@ import static server.yeepay.YeepayApiFunction.getLocalYeepayQuerying;
 
 public class YeepayImp {
 
-    private static int invTime =  60 * 1000;
+    private static int invTime =  15 * 1000;
 
     static{
         Thread loopResultThread = new Thread(
                 () -> {
-
                     while (true){
-
-
                         List<Tuple2<String, String>> list = getLocalYeepayQuerying(invTime);
-
                         for (Tuple2<String, String> it : list){
-
                             Tuple2<Integer, String> query = query(it.getValue0());
                             if (query.getValue0() == -1){
                                 // 支付取消
@@ -51,9 +46,7 @@ public class YeepayImp {
                                 delLocalYeepayAttr(it.getValue1());
                             }
                         }
-
                         ThreadTool.threadSleep(invTime);
-
                     }
 
                 }
@@ -107,7 +100,7 @@ public class YeepayImp {
         if (response != null){
             JSONObject json = JSON.parseObject(response);
             String errcode = json.getString("code");
-            if (!StringUtil.isEmpty(errcode) && !"00000".equals(errcode)) {
+            if (!StringUtil.isEmpty(errcode) && !"OPR00000".equals(errcode)) {
                 return new Tuple2<>(-2,json.getString("message"));
             }
             String status = json.getString("status");
@@ -179,6 +172,7 @@ public class YeepayImp {
             if (!StringUtil.isEmpty(errcode) && !"OPR00000".equals(errcode)) {
                 return new Tuple2<>(false,"退款受理失败: " + errcode+ "-" + json.getString("message"));
             }
+
             String status = json.getString("status");
 //            PROCESSING：退款处理中
 //            SUCCESS：退款成功
