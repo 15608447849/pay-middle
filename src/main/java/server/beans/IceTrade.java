@@ -86,25 +86,30 @@ public class IceTrade {
         String med = attrArr[4];
         String compid = attrArr[5];
 
+
         // 0 后台订单号或流水号,1 支付平台类型,2 第三方流水号,3 交易状态,4 交易时间,5 交易金额,6 公司码,7 客户端类型
         String[] params = new String[]{out_trade_no,pay_type,trade_no,trade_status,gmt_payment,buyer_pay_amount,compid,pay_client_type};
-        Log4j.info("[支付结果通知] ICE-请求参数:" + Arrays.toString(params));
-
         if (iceTag.startsWith("预留参数")) iceTag = "DRUG"; // 兼容处理
+
+        long times = System.currentTimeMillis();
+        Log4j.info("[支付结果通知] ("+times+") ICE-请求参数:" + Arrays.toString(params));
         String json = IceClientUtils.executeICE(iceTag,"空间折叠支付中间件",sn,cls,med,params);
+        Log4j.info("[支付结果通知] ("+times+") ICE-返回结果:" + json);
+
+
         boolean isSuccess = false;
         if (StringUtils.isNotEmpty(json)){
 
             final IceResult result = new Gson().fromJson(json,IceResult.class);
             isSuccess =  result!=null && result.code == 200;
-            Log4j.info("[业务系统处理支付结果通知] ICE-返回结果:" + json+" 处理成功标识 = "+ isSuccess);
 
             if (isSuccess) {
                 deleteLocalNotifyFile(this);
-
                 autoRefundAtm(result);
             }
         }
+
+        Log4j.info("[支付结果通知] ("+times+") 业务系统处理成功标识:" + isSuccess);
 
         return isSuccess;
     }
@@ -125,9 +130,14 @@ public class IceTrade {
                     String priceTotal = buyer_pay_amount; //退款总金额
                     boolean isApp = pay_client_type.equals("1"); //是不是移动支付
 
+                    if (refundNo.endsWith("001")) {
+                        Log4j.info("[自动退款] result.data="+result.data+" 自动退款拒绝,本次流水号: "+ refundNo);
+                        return;
+                    }
+
                     RefundOrder rorder = new  RefundOrder(refundNo, tradeNo,new BigDecimal(price));
                     rorder.setTotalAmount(new BigDecimal(priceTotal));
-                    Log4j.info("[业务系统处理支付结果通知] result.data="+result.data+" 进行自动退款:\n\t"
+                    Log4j.info("[自动退款] result.data="+result.data+" 进行自动退款:\t"
                             +"type="+ type+" , tradeNo="+tradeNo+" , refundNo="+ refundNo+" , priceTotal="+priceTotal+" , isApp="+ isApp);
 
                     if (type.equals("alipay")){
