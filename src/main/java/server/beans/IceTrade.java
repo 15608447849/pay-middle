@@ -64,6 +64,9 @@ public class IceTrade {
     //支付请求附带信息: 时间戳,服务标识,服务名,回调类名,回调方法,公司码
     private String pay_request_attach;
 
+    // 是否允许自动退款
+    private final static boolean allowAutoRefund = false;
+
     public IceTrade(String body,String trade_no, String out_trade_no, String pay_type, String gmt_payment, String trade_status,String buyer_pay_amount,String pay_client_type) {
         this.trade_no = trade_no;
         this.out_trade_no = out_trade_no;
@@ -105,6 +108,7 @@ public class IceTrade {
 
             if (isSuccess) {
                 deleteLocalNotifyFile(this);
+
                 autoRefundAtm(result);
             }
         }
@@ -119,39 +123,37 @@ public class IceTrade {
         // code == 200 && data>0 标识需要自动退款
         if (result.data!=null && Double.parseDouble(String.valueOf(result.data)) > 0){
             // 已取消或已支付订单, 自动退款
-            autoRefundTimer.schedule(new TimerTask() {
-                @Override
-                public void run() {
 
-                    String type = pay_type;// 平台类型
-                    String tradeNo = trade_no; //三方平台相关订单号
-                    String refundNo = out_trade_no; //一块医药退款单号/流水号
-                    String price = buyer_pay_amount; //退款金额
-                    String priceTotal = buyer_pay_amount; //退款总金额
-                    boolean isApp = pay_client_type.equals("1"); //是不是移动支付
+            Log4j.info("订单已取消或已支付,需要进行退款, result.data="+result.data+" 本次流水号: "+ out_trade_no);
 
-                    if (refundNo.endsWith("001")) {
-                        Log4j.info("[自动退款] result.data="+result.data+" 自动退款拒绝,本次流水号: "+ refundNo);
-                        return;
+            if(allowAutoRefund){
+                autoRefundTimer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        String type = pay_type;// 平台类型
+                        String tradeNo = trade_no; //三方平台相关订单号
+                        String refundNo = out_trade_no; //一块医药退款单号/流水号
+                        String price = buyer_pay_amount; //退款金额
+                        String priceTotal = buyer_pay_amount; //退款总金额
+                        boolean isApp = pay_client_type.equals("1"); //是不是移动支付
+                        RefundOrder rorder = new  RefundOrder(refundNo, tradeNo,new BigDecimal(price));
+                        rorder.setTotalAmount(new BigDecimal(priceTotal));
+                        Log4j.info("[自动退款] result.data="+result.data+" 进行自动退款:\t"
+                                +"type="+ type+" , tradeNo="+tradeNo+" , refundNo="+ refundNo+" , priceTotal="+priceTotal+" , isApp="+ isApp);
+                        if (type.equals("alipay")){
+                            AlipayImp.refund(rorder);
+                        }
+                        if (type.equals("wxpay")){
+                            WxpayImp.refund(rorder,isApp);
+                        }
+                        if (type.equals("yeepay")){
+                            YeepayImp.refund(refundNo,refundNo,tradeNo,price);
+                        }
                     }
+                },5000);
 
-                    RefundOrder rorder = new  RefundOrder(refundNo, tradeNo,new BigDecimal(price));
-                    rorder.setTotalAmount(new BigDecimal(priceTotal));
-                    Log4j.info("[自动退款] result.data="+result.data+" 进行自动退款:\t"
-                            +"type="+ type+" , tradeNo="+tradeNo+" , refundNo="+ refundNo+" , priceTotal="+priceTotal+" , isApp="+ isApp);
+            }
 
-                    if (type.equals("alipay")){
-                        AlipayImp.refund(rorder);
-                    }
-                    if (type.equals("wxpay")){
-                        WxpayImp.refund(rorder,isApp);
-                    }
-                    if (type.equals("yeepay")){
-                        YeepayImp.refund(refundNo,refundNo,tradeNo,price);
-                    }
-
-                }
-            },5000);
 
         }
     }

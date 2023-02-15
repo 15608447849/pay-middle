@@ -198,8 +198,15 @@ public class YeepayApiFunction {
 
     public static void delLocalYeepayAttr(String md5){
         File fn = new File("./yeepay",md5);
+        String json = null;
         if (fn.exists()) {
-            fn.delete();
+            try(BufferedReader bf = new BufferedReader(new InputStreamReader(Files.newInputStream(fn.toPath()), StandardCharsets.UTF_8))){
+                json = bf.readLine();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+            boolean isDelete = fn.delete();
+            Log4j.info("删除yeepay文件: "+ md5 +" 删除结果: "+ isDelete +"\n文件内容: "+ json);
         }
     }
 
@@ -217,6 +224,7 @@ public class YeepayApiFunction {
                     Map<String,String> map = GoogleGsonUtil.string2Map(json);
                     String orderID = map.get("orderID");
                     list.add(new Tuple2<>(orderID,f.getName()));
+                    Log4j.info("获取到待查询的本地文件: "+ f+" 对应订单ID: "+ orderID);
                 }catch (Exception e){
                     e.printStackTrace();
                 }

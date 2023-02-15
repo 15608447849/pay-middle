@@ -26,26 +26,33 @@ import static server.yeepay.YeepayApiFunction.getLocalYeepayQuerying;
 
 public class YeepayImp {
 
-    private static int invTime =  15 * 1000;
+    private static int invTime = 30 * 1000;
 
     static{
         Thread loopResultThread = new Thread(
                 () -> {
                     while (true){
-                        List<Tuple2<String, String>> list = getLocalYeepayQuerying(invTime);
-                        for (Tuple2<String, String> it : list){
-                            Tuple2<Integer, String> query = query(it.getValue0());
-                            if (query.getValue0() == -1){
-                                // 支付取消
-                                delLocalYeepayAttr(it.getValue1());
+
+                        try {
+                            List<Tuple2<String, String>> list = getLocalYeepayQuerying(invTime);
+                            for (Tuple2<String, String> it : list){
+                                Tuple2<Integer, String> query = query(it.getValue0());
+                                if (query.getValue0() == -1){
+                                    // 支付取消
+                                    delLocalYeepayAttr(it.getValue1());
+                                }
+                                if (query.getValue0() == -2){
+                                    // 支付失败
+                                    Log4j.info("[轮询] 易宝订单支付失败: "+ it.getValue0() +" 文件: "+it.getValue0());
+                                    // 发送失败通知?
+                                    delLocalYeepayAttr(it.getValue1());
+                                }
                             }
-                            if (query.getValue0() == -2){
-                                // 支付失败
-                                Log4j.info("[轮询] 易宝订单支付失败: "+ it.getValue0() +" 文件: "+it.getValue0());
-                                // 发送失败通知?
-                                delLocalYeepayAttr(it.getValue1());
-                            }
+
+                        } catch (Exception e) {
+                            Log4j.error(e);
                         }
+
                         ThreadTool.threadSleep(invTime);
                     }
 
